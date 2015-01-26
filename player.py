@@ -1,6 +1,24 @@
 import random
 
 
+CARDS_PER_HAND = 5
+
+
+class Game(object):
+
+    def __init__(self, deck, players):
+        self.deck = deck
+        self.players = players
+
+        self.hands = []
+        for player in players:
+            self.hands.append(PlayerHand(self.deck, player))
+
+        for _ in xrange(CARDS_PER_HAND):
+            for hand in self.hands:
+                hand.take_from_dealer()
+
+
 class PlayerHand(object):
 
     def __init__(self, deck, player):
@@ -8,7 +26,13 @@ class PlayerHand(object):
         self.player = player
         # Set the cards.
         self.played_cards = []
-        self.unplayed_cards = [deck.draw_card() for _ in xrange(5)]
+        self.unplayed_cards = []
+
+    def take_from_dealer(self):
+        card = self.deck.draw_card()
+        self.unplayed_cards.append(card)
+        if len(self.unplayed_cards) > CARDS_PER_HAND:
+            raise ValueError('Too many cards')
 
     def bid(self):
         return self.player.make_bid(self)
@@ -28,7 +52,7 @@ class PlayerHand(object):
 
 class RandomPlayer(object):
 
-    RANDOM_BIDS = (2, 3, 4, 5)
+    RANDOM_BIDS = tuple(range(2, CARDS_PER_HAND + 1))
 
     def draw_cards(self, hand):
         num_to_draw = random.randint(0, 6)  # `randint` is inclusive
@@ -37,8 +61,9 @@ class RandomPlayer(object):
 
         # Keep a random subset of cards.
         # random.sample "Chooses k unique random elements"
-        hand.unplayed_cards = random.sample(hand.unplayed_cards,
-                                            5 - num_to_draw)
+        hand.unplayed_cards = random.sample(
+            hand.unplayed_cards, CARDS_PER_HAND - num_to_draw)
+
         for _ in num_to_draw:
             hand.unplayed_cards.append(hand.deck.draw_card())
 
