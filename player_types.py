@@ -1,11 +1,13 @@
 import random
 
+from deck import CARD_SUITS
 from game_play import CARDS_PER_HAND
 
 
 class RandomPlayer(object):
 
     MINIMUM_BID = 2
+    TRUMP_CHOICES = tuple(CARD_SUITS.keys())
     RANDOM_BIDS = tuple(range(MINIMUM_BID, CARDS_PER_HAND + 1))
 
     def draw_cards(self, hand, unused_winning_bid):
@@ -31,12 +33,15 @@ class RandomPlayer(object):
         return num_to_draw
 
     def make_bid(self, hand, max_bid):
+        trump = random.choice(self.TRUMP_CHOICES)
         if hand.is_dealer and max_bid < self.MINIMUM_BID:
-            return self.MINIMUM_BID
+            return self.MINIMUM_BID, trump
 
         bid_val = random.choice(self.RANDOM_BIDS)
         if bid_val > max_bid:
-            return bid_val
+            return bid_val, trump
+        else:
+            return None, None
 
     def play_card(self, hand, unused_trump, unused_cards_out):
         card_to_play = random.choice(hand.unplayed_cards)
