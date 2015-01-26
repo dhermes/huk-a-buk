@@ -8,9 +8,16 @@ class RandomPlayer(object):
     MINIMUM_BID = 2
     RANDOM_BIDS = tuple(range(MINIMUM_BID, CARDS_PER_HAND + 1))
 
-    def draw_cards(self, hand):
-        num_to_draw = random.randint(0, 6)  # `randint` is inclusive
-        if num_to_draw == 6:
+    def draw_cards(self, hand, unused_winning_bid):
+        # `randint` is inclusive
+        if hand.won_bid:
+            # Winner can't fold.
+            num_to_draw = random.randint(0, CARDS_PER_HAND)
+        else:
+            # 6-9 fold, so 40% of hands will fold.
+            num_to_draw = random.randint(0, 2 * CARDS_PER_HAND - 1)
+
+        if num_to_draw > CARDS_PER_HAND:
             return None
 
         # Keep a random subset of cards.
@@ -18,7 +25,7 @@ class RandomPlayer(object):
         hand.unplayed_cards = random.sample(
             hand.unplayed_cards, CARDS_PER_HAND - num_to_draw)
 
-        for _ in num_to_draw:
+        for _ in xrange(num_to_draw):
             hand.unplayed_cards.append(hand.deck.draw_card())
 
         return num_to_draw

@@ -7,8 +7,11 @@ def simulate(num_players=4):
     curr_deck = random_deck()
     players = [RandomPlayer() for _ in xrange(num_players)]
     game = Game(curr_deck, players)
-    return game
+    game.play()
+    print game
+    for hand in game.hands:
+        print hand
 
 
 if __name__ == '__main__':
-    print simulate()
+    simulate()
