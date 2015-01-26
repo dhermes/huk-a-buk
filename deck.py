@@ -27,6 +27,7 @@ class Card(object):
 class Deck(object):
 
     def __init__(self):
+        self.current_index = 0
         self.cards = []
         for value in CARD_VALUES:
             for suit in CARD_SUITS.keys():
@@ -35,3 +36,15 @@ class Deck(object):
 
     def shuffle(self):
         random.shuffle(self.cards)
+        self.current_index = 0
+
+    def draw_card(self):
+        result = self.cards[self.current_index]
+        self.current_index += 1
+        return result
+
+
+def random_deck():
+    deck = Deck()
+    deck.shuffle()
+    return deck
