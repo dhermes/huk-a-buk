@@ -5,7 +5,8 @@ from game_play import CARDS_PER_HAND
 
 class RandomPlayer(object):
 
-    RANDOM_BIDS = tuple(range(2, CARDS_PER_HAND + 1))
+    MINIMUM_BID = 2
+    RANDOM_BIDS = tuple(range(MINIMUM_BID, CARDS_PER_HAND + 1))
 
     def draw_cards(self, hand):
         num_to_draw = random.randint(0, 6)  # `randint` is inclusive
@@ -22,8 +23,13 @@ class RandomPlayer(object):
 
         return num_to_draw
 
-    def make_bid(self, unused_hand):
-        return random.choice(self.RANDOM_BIDS)
+    def make_bid(self, hand, max_bid):
+        if hand.is_dealer and max_bid < self.MINIMUM_BID:
+            return self.MINIMUM_BID
+
+        bid_val = random.choice(self.RANDOM_BIDS)
+        if bid_val > max_bid:
+            return bid_val
 
     def play_card(self, hand, unused_trump, unused_cards_out):
         card_to_play = random.choice(hand.unplayed_cards)
