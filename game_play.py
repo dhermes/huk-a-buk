@@ -18,6 +18,7 @@ class Game(object):
     def play(self):
         self.get_bids()
         self.draw_cards()
+        self.play_hands()
 
     def get_bids(self):
         self.winning_bid = 1  # Maximum non-bid.
@@ -48,6 +49,13 @@ class Game(object):
                 raise ValueError('Winning bidder must not fold')
         self.hands = hands_after_draw
 
+    def play_hands(self):
+        for _ in xrange(5):
+            self.play_hand()
+
+    def play_hand(self):
+        pass
+
 
 class PlayerHand(object):
 
@@ -59,6 +67,11 @@ class PlayerHand(object):
         # Set the cards.
         self.played_cards = []
         self.unplayed_cards = []
+
+    def __unicode__(self):
+        all_cards = self.played_cards + self.unplayed_cards
+        pretty_str = ', '.join(card.pretty for card in all_cards)
+        return 'PlayerHand(%s)' % (pretty_str,)
 
     def take_from_dealer(self):
         card = self.deck.draw_card()

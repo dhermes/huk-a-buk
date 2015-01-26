@@ -10,7 +10,7 @@ def simulate(num_players=4):
     game.play()
     print game
     for hand in game.hands:
-        print hand
+        print unicode(hand)
 
 
 if __name__ == '__main__':

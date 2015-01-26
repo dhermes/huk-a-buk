@@ -3,10 +3,10 @@ import random
 
 CARD_VALUES = (2, 3, 4, 5, 6, 7, 8, 9, 10, 'J', 'Q', 'K', 'A')
 CARD_SUITS = {
-    'H': 'Hearts',
-    'S': 'Spades',
-    'C': 'Clubs',
-    'D': 'Diamonds',
+    'H': u'\u2665',
+    'S': u'\u2660',
+    'C': u'\u2663',
+    'D': u'\u2666',
 }
 
 
@@ -22,6 +22,14 @@ class Card(object):
             raise ValueError('Bad card value', self.value)
         if self.suit not in CARD_SUITS:
             raise ValueError('Bad card suit', self.suit)
+
+    @property
+    def pretty(self):
+        # # To test:
+        # deck = random_deck()
+        # for card in deck.cards:
+        #     print card.pretty
+        return u'%s%s' % (self.value, CARD_SUITS[self.suit])
 
 
 class Deck(object):
