@@ -62,7 +62,7 @@ class Game(object):
                 print_method('Player %s does not bid.' % (hand,))
 
         self.winning_bidder = self.hands[winning_index]
-        self.winning_bidder.won_bid = True
+        self.winning_bidder.won_bid = self.winning_bid
         # Re-order so that the winning bidder is last.
         self.hands = reorder_for_hand(self.hands, self.winning_bidder,
                                       make_last=True)
@@ -96,6 +96,14 @@ class Game(object):
             self.play_trick()
             print_method(SEPARATOR)
 
+        for hand in self.hands:
+            if hand.won_bid != 0:
+                print_method('%s finished with %d tricks after bidding %d.' % (
+                    hand, hand.tricks, hand.won_bid))
+            else:
+                print_method('%s finished with %d tricks.' % (hand,
+                                                              hand.tricks))
+
     def play_trick(self):
         cards_out = []
         for hand in self.hands:
@@ -104,10 +112,18 @@ class Game(object):
 
         best_card = cards_out[0]
         lead_suit = cards_out[0].suit
-        for card in cards_out[1:]:
+        winning_index = 0
+        for i, card in enumerate(cards_out[1:]):
             if card.is_better(best_card, self.trump, lead_suit):
+                winning_index = i + 1
                 best_card = card
-        print_method('Best card: %s' % (best_card.pretty,))
+
+        winning_hand = self.hands[winning_index]
+        winning_hand.tricks += 1
+        # Re-order so that the winning bidder is last.
+        self.hands = reorder_for_hand(self.hands, winning_hand,
+                                      make_last=False)
+        print_method('%s wins.' % (winning_hand,))
 
 
 class PlayerHand(object):
@@ -117,10 +133,11 @@ class PlayerHand(object):
         self.deck = deck
         self.player = player
         self.is_dealer = False
-        self.won_bid = False
+        self.won_bid = 0
         # Set the cards.
         self.played_cards = []
         self.unplayed_cards = []
+        self.tricks = 0
 
     def __str__(self):
         return 'PlayerHand(%r)' % (self.hand_name,)

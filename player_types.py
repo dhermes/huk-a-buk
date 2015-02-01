@@ -12,7 +12,7 @@ class RandomPlayer(object):
 
     def draw_cards(self, hand, unused_winning_bid):
         # `randint` is inclusive
-        if hand.won_bid:
+        if hand.won_bid != 0:
             # Winner can't fold.
             num_to_draw = random.randint(0, CARDS_PER_HAND)
         else:
