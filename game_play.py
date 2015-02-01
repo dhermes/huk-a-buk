@@ -1,12 +1,23 @@
+from deck import CARD_SUITS
+
+
 CARDS_PER_HAND = 5
+SEPARATOR = '=' * 60
+DEBUG = False
+
+
+def print_method(value):
+    if DEBUG:
+        print(value)
 
 
 class Game(object):
 
     def __init__(self, deck, players):
         self.hands = []
-        for player in players:
-            self.hands.append(PlayerHand(deck, player))
+        for i, player in enumerate(players):
+            hand_name = chr(i + 65)
+            self.hands.append(PlayerHand(deck, player, hand_name=hand_name))
 
         # Make the last hand the dealer.
         self.hands[-1].is_dealer = True
@@ -39,6 +50,9 @@ class Game(object):
         new_beginning = self.hands[winning_index + 1:]
         truncated_front = self.hands[:winning_index + 1]
         self.hands = new_beginning + truncated_front
+        message = ('%s won bid with %d tricks. Trump is %s.' % (
+            self.winning_bidder, self.winning_bid, CARD_SUITS[self.trump]))
+        print_method(message)
 
     def draw_cards(self):
         hands_after_draw = []
@@ -49,20 +63,29 @@ class Game(object):
             elif hand is self.winning_bidder:
                 raise ValueError('Winning bidder must not fold')
         self.hands = hands_after_draw
+        print_method(SEPARATOR)
+        print_method('Hands remaining are:')
+        for hand in self.hands:
+            print_method(hand.pretty)
 
     def play_tricks(self):
-        for _ in xrange(5):
+        print_method(SEPARATOR)
+        for i in xrange(5):
+            print_method('Trick %d:' % (i + 1,))
             self.play_trick()
+            print_method(SEPARATOR)
 
     def play_trick(self):
         cards_out = []
         for hand in self.hands:
-            hand.play(self.trump, cards_out[:])
+            card_played = hand.play(self.trump, cards_out[:])
+            print_method('Hand %s played %s.' % (hand, card_played.pretty))
 
 
 class PlayerHand(object):
 
-    def __init__(self, deck, player):
+    def __init__(self, deck, player, hand_name=None):
+        self.hand_name = hand_name
         self.deck = deck
         self.player = player
         self.is_dealer = False
@@ -71,18 +94,24 @@ class PlayerHand(object):
         self.played_cards = []
         self.unplayed_cards = []
 
-    def __unicode__(self):
+    def __str__(self):
+        return 'PlayerHand(%r)' % (self.hand_name,)
+
+    @property
+    def pretty(self):
         played_pretty_str = ', '.join(card.pretty for card in self.played_cards)
         unplayed_pretty_str = ', '.join(card.pretty
                                         for card in self.unplayed_cards)
         if played_pretty_str:
             if unplayed_pretty_str:
-                return 'PlayerHand(played=%s, unplayed=%s)' % (
-                    played_pretty_str, unplayed_pretty_str)
+                return 'PlayerHand(%r, played=%s, unplayed=%s)' % (
+                    self.hand_name, played_pretty_str, unplayed_pretty_str)
             else:
-                return 'PlayerHand(played=%s)' % (played_pretty_str,)
+                return 'PlayerHand(%r, played=%s)' % (self.hand_name,
+                                                      played_pretty_str)
         else:
-            return 'PlayerHand(unplayed=%s)' % (unplayed_pretty_str,)
+            return 'PlayerHand(%r, unplayed=%s)' % (self.hand_name,
+                                                    unplayed_pretty_str)
 
 
     def take_from_dealer(self):

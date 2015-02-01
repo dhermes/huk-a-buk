@@ -25,10 +25,6 @@ class Card(object):
 
     @property
     def pretty(self):
-        # # To test:
-        # deck = random_deck()
-        # for card in deck.cards:
-        #     print card.pretty
         return u'%s%s' % (self.value, CARD_SUITS[self.suit])
 
 
