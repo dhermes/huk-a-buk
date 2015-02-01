@@ -8,7 +8,11 @@ class RandomPlayer(object):
 
     MINIMUM_BID = 2
     TRUMP_CHOICES = tuple(CARD_SUITS.keys())
-    RANDOM_BIDS = tuple(range(MINIMUM_BID, CARDS_PER_HAND + 1))
+    RANDOM_BIDS = ((5,) +       # Pr(5) = 1/100
+                   (4, 4) +     # Pr(4) = 2/100
+                   (3,) * 24 +  # Pr(3) = 24/100
+                   (2,) * 48 +  # Pr(2) = 48/100
+                   (-1,) * 25)  # Pr(No Bid) = 25/100
 
     def draw_cards(self, hand, unused_winning_bid):
         # `randint` is inclusive
