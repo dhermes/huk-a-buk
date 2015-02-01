@@ -71,23 +71,23 @@ class Game(object):
         print_method(message)
 
     def draw_cards(self):
+        print_method(SEPARATOR)
         hands_after_draw = []
         for hand in self.hands:
             cards_drawn = hand.draw(self.winning_bid)
             if cards_drawn is not None:
                 hands_after_draw.append(hand)
+                print_method('Hand %s takes %d cards.' % (hand.pretty,
+                                                          cards_drawn))
             elif hand is self.winning_bidder:
                 raise ValueError('Winning bidder must not fold')
+            else:
+                print_method('Hand %s folds.' % (hand.pretty,))
         self.hands = hands_after_draw
 
         # Re-order so that the winning bidder plays first.
         self.hands = reorder_for_hand(self.hands, self.winning_bidder,
                                       make_last=False)
-
-        print_method(SEPARATOR)
-        print_method('Hands remaining are:')
-        for hand in self.hands:
-            print_method(hand.pretty)
 
     def play_tricks(self):
         print_method(SEPARATOR)
