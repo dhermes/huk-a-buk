@@ -11,6 +11,20 @@ def print_method(value):
         print(value)
 
 
+def reorder_for_hand(hands, hand, make_last=False):
+    matching_indices = [i for i, curr_hand in enumerate(hands)
+                        if curr_hand is hand]
+    if len(matching_indices) != 1:
+        raise ValueError('Not exactly one matching hand.')
+
+    if make_last:
+        index = matching_indices[0] + 1
+    else:
+        index = matching_indices[0]
+
+    return hands[index:] + hands[:index]
+
+
 class Game(object):
 
     def __init__(self, deck, players):
@@ -50,9 +64,8 @@ class Game(object):
         self.winning_bidder = self.hands[winning_index]
         self.winning_bidder.won_bid = True
         # Re-order so that the winning bidder is last.
-        new_beginning = self.hands[winning_index + 1:]
-        truncated_front = self.hands[:winning_index + 1]
-        self.hands = new_beginning + truncated_front
+        self.hands = reorder_for_hand(self.hands, self.winning_bidder,
+                                      make_last=True)
         message = ('%s won bid with %d tricks. Trump is %s.' % (
             self.winning_bidder, self.winning_bid, CARD_SUITS[self.trump]))
         print_method(message)
@@ -66,6 +79,11 @@ class Game(object):
             elif hand is self.winning_bidder:
                 raise ValueError('Winning bidder must not fold')
         self.hands = hands_after_draw
+
+        # Re-order so that the winning bidder plays first.
+        self.hands = reorder_for_hand(self.hands, self.winning_bidder,
+                                      make_last=False)
+
         print_method(SEPARATOR)
         print_method('Hands remaining are:')
         for hand in self.hands:
