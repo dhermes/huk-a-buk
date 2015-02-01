@@ -38,11 +38,14 @@ class Game(object):
         for index, hand in enumerate(self.hands):
             curr_bid, trump = hand.bid(self.winning_bid)
             if curr_bid is not None:
+                print_method('Player %s bids %d.' % (hand, curr_bid))
                 if not curr_bid > self.winning_bid:
                     raise ValueError('Bids can only increase.')
                 self.winning_bid = curr_bid
                 self.trump = trump
                 winning_index = index
+            else:
+                print_method('Player %s does not bid.' % (hand,))
 
         self.winning_bidder = self.hands[winning_index]
         self.winning_bidder.won_bid = True
