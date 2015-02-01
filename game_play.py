@@ -99,8 +99,15 @@ class Game(object):
     def play_trick(self):
         cards_out = []
         for hand in self.hands:
-            card_played = hand.play(self.trump, cards_out[:])
+            card_played = hand.play(self.trump, cards_out)
             print_method('Hand %s played %s.' % (hand, card_played.pretty))
+
+        best_card = cards_out[0]
+        lead_suit = cards_out[0].suit
+        for card in cards_out[1:]:
+            if card.is_better(best_card, self.trump, lead_suit):
+                best_card = card
+        print_method('Best card: %s' % (best_card.pretty,))
 
 
 class PlayerHand(object):
@@ -154,4 +161,6 @@ class PlayerHand(object):
         return self.player.draw_cards(self, winning_bid)
 
     def play(self, trump, cards_out):
-        return self.player.play_card(self, trump, cards_out)
+        card_played = self.player.play_card(self, trump, cards_out)
+        cards_out.append(card_played)
+        return card_played

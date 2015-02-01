@@ -27,6 +27,26 @@ class Card(object):
     def pretty(self):
         return u'%2s%s' % (self.value, CARD_SUITS[self.suit])
 
+    def is_better(self, other_card, trump, lead_suit):
+        if self.suit == other_card.suit:
+            return self.value > other_card.value
+
+        # If the suits are different, then at most 1 is trump and at
+        # most 1 is the lead suit.
+        if self.suit == trump:
+            return True
+        elif other_card.suit == trump:
+            return False
+
+        if self.suit == lead_suit:
+            return True
+        elif other_card.suit == lead_suit:
+            return False
+
+        # If neither card is one of the relevant suits, their comparison
+        # is irrelevant, but `self` is certainly not `is_better`.
+        return False
+
 
 class Deck(object):
 
