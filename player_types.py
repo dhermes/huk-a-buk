@@ -57,8 +57,25 @@ class RandomPlayer(object):
         else:
             return None, None
 
-    def play_card(self, hand, unused_trump, unused_cards_out):
-        card_to_play = random.choice(hand.unplayed_cards)
+    def play_card(self, hand, trump, cards_out):
+        # Winning bidder must lead first hand with trump.
+        if hand.won_bid != 0 and len(hand.unplayed_cards) == CARDS_PER_HAND:
+            matching_cards = [card for card in hand.unplayed_cards
+                              if card.suit == trump]
+            if len(matching_cards) == 0:
+                raise ValueError('Winning bid has no trump. What the hell!')
+            card_to_play = random.choice(matching_cards)
+        elif cards_out:
+            matching_cards = [card for card in hand.unplayed_cards
+                              if card.suit == cards_out[0].suit]
+            # Follow suit if you can.
+            if matching_cards:
+                card_to_play = random.choice(matching_cards)
+            else:
+                card_to_play = random.choice(hand.unplayed_cards)
+        else:
+            card_to_play = random.choice(hand.unplayed_cards)
+
         hand.unplayed_cards.remove(card_to_play)
         hand.played_cards.append(card_to_play)
         return card_to_play
