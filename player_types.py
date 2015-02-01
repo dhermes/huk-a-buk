@@ -7,7 +7,6 @@ from game_play import CARDS_PER_HAND
 class RandomPlayer(object):
 
     MINIMUM_BID = 2
-    TRUMP_CHOICES = tuple(CARD_SUITS.keys())
     RANDOM_BIDS = ((5,) +       # Pr(5) = 1/100
                    (4, 4) +     # Pr(4) = 2/100
                    (3,) * 24 +  # Pr(3) = 24/100
@@ -47,7 +46,8 @@ class RandomPlayer(object):
         return num_to_draw
 
     def make_bid(self, hand, max_bid):
-        trump = random.choice(self.TRUMP_CHOICES)
+        hand_suits = [card.suit for card in hand.unplayed_cards]
+        trump = random.choice(hand_suits)
         if hand.is_dealer and max_bid < self.MINIMUM_BID:
             return self.MINIMUM_BID, trump
 
