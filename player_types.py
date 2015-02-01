@@ -15,21 +15,31 @@ class RandomPlayer(object):
                    (-1,) * 25)  # Pr(No Bid) = 25/100
 
     def draw_cards(self, hand, unused_winning_bid):
+        trump = hand.game.trump
+        trump_cards = [card for card in hand.unplayed_cards
+                       if card.suit == trump]
+        non_trump_cards = [card for card in hand.unplayed_cards
+                           if card.suit != trump]
+        cards_to_ditch = len(non_trump_cards)
+
         # `randint` is inclusive
         if hand.won_bid != 0:
             # Winner can't fold.
-            num_to_draw = random.randint(0, CARDS_PER_HAND)
+            num_to_draw = random.randint(0, cards_to_ditch)
         else:
-            # 6-9 fold, so 40% of hands will fold.
-            num_to_draw = random.randint(0, 2 * CARDS_PER_HAND - 1)
+            # Fold 40% of the time.
+            if random.random() < 0.4:
+                num_to_draw = CARDS_PER_HAND + 1
+            else:
+                num_to_draw = random.randint(0, cards_to_ditch)
 
         if num_to_draw > CARDS_PER_HAND:
             return None
 
         # Keep a random subset of cards.
         # random.sample "Chooses k unique random elements"
-        hand.unplayed_cards = random.sample(
-            hand.unplayed_cards, CARDS_PER_HAND - num_to_draw)
+        hand.unplayed_cards = trump_cards + random.sample(
+            non_trump_cards, cards_to_ditch - num_to_draw)
 
         for _ in xrange(num_to_draw):
             hand.unplayed_cards.append(hand.deck.draw_card())

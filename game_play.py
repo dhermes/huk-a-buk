@@ -31,7 +31,8 @@ class Game(object):
         self.hands = []
         for i, player in enumerate(players):
             hand_name = chr(i + 65)
-            self.hands.append(PlayerHand(deck, player, hand_name=hand_name))
+            self.hands.append(PlayerHand(self, deck, player,
+                                         hand_name=hand_name))
 
         # Make the last hand the dealer.
         self.hands[-1].is_dealer = True
@@ -128,7 +129,8 @@ class Game(object):
 
 class PlayerHand(object):
 
-    def __init__(self, deck, player, hand_name=None):
+    def __init__(self, game, deck, player, hand_name=None):
+        self.game = game
         self.hand_name = hand_name
         self.deck = deck
         self.player = player
