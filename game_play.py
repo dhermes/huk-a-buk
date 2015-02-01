@@ -102,9 +102,9 @@ class PlayerHand(object):
 
     @property
     def pretty(self):
-        played_pretty_str = ', '.join(card.pretty for card in self.played_cards)
-        unplayed_pretty_str = ', '.join(card.pretty
-                                        for card in self.unplayed_cards)
+        played_pretty_str = ','.join(card.pretty for card in self.played_cards)
+        unplayed_pretty_str = ','.join(card.pretty
+                                       for card in self.unplayed_cards)
         if played_pretty_str:
             if unplayed_pretty_str:
                 return 'PlayerHand(%r, played=%s, unplayed=%s)' % (

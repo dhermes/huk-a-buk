@@ -25,7 +25,7 @@ class Card(object):
 
     @property
     def pretty(self):
-        return u'%s%s' % (self.value, CARD_SUITS[self.suit])
+        return u'%2s%s' % (self.value, CARD_SUITS[self.suit])
 
 
 class Deck(object):
