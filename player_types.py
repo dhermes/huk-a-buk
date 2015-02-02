@@ -60,7 +60,9 @@ class RandomPlayer(object):
             non_trump_cards, cards_to_ditch - num_to_draw)
 
         for _ in xrange(num_to_draw):
-            hand.unplayed_cards.append(hand.deck.draw_card())
+            new_card = hand.deck.draw_card()
+            new_card.from_original_hand = False
+            hand.unplayed_cards.append(new_card)
 
         return num_to_draw
 
