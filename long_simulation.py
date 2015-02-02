@@ -1,3 +1,4 @@
+import argparse
 import time
 
 import deck
@@ -5,7 +6,7 @@ import game_play
 from player_types import RandomPlayer
 
 
-RESULTS_FILE_TMP = 'results-%d.bindata'
+RESULTS_FILE_TMP = 'results-%d-%d.bindata'
 SEPARATOR = '|'
 STATUS_UPDATE = 5 * 10**4
 SERIALIZED_OUTCOMES = {
@@ -97,7 +98,8 @@ def long_simulate(n):
     print 'Simulating {:,} games'.format(n)
 
     start = time.time()
-    results_file = RESULTS_FILE_TMP % (time.time(),)
+    results_file = RESULTS_FILE_TMP % (time.time(), n)
+    print 'Saving in %s.' % (results_file,)
     with open(results_file, 'wb') as fh:
         # Write the first so that separator only appears before.
         # Assumes n > 0.
@@ -112,30 +114,9 @@ def long_simulate(n):
                 print message
 
 
-def read_simulation(results_file):
-    with open(results_file, 'rb') as fh:
-        result_lines = fh.read().split(SEPARATOR)
-
-    all_games = []
-    for line in result_lines:
-        num_players, remainder = divmod(len(line), 6)
-        if remainder != 1:
-            raise ValueError('Expected 6 characters per hand.')
-
-        trump = line[0]
-        line = line[1:]
-        hands = [trump]
-        for index in range(num_players):
-            cards = [deck.Card.deserialize(line[6 * index + i])
-                     for i in xrange(5)]
-            cards.extend(DESERIALIZED_OUTCOMES[line[6 * index + 5]])
-            hands.append(cards)
-
-        all_games.append(hands)
-
-    return all_games
-
-
 if __name__ == '__main__':
-    num_games = 10**6
-    long_simulate(num_games)
+    parser = argparse.ArgumentParser(description='Simulation Huk-A-Buk.')
+    parser.add_argument('--num-games', dest='num_games', type=int,
+                        required=True, help='Number of games to simulate.')
+    args = parser.parse_args()
+    long_simulate(args.num_games)
