@@ -7,12 +7,14 @@ from game_play import CARDS_PER_HAND
 ASSUMPTIONS = {
     'non_win_fold': 0.4,  # 40% chance of folding given non-winning bid.
     'bids': {
-         5:  1,  #      Pr(5) = 1/100
-         4:  2,  #      Pr(4) = 2/100
-         3: 24,  #      Pr(3) = 24/100
-         2: 48,  #      Pr(2) = 48/100
-        -1: 25,  # Pr(No Bid) = 25/100
+         5:   1,  #      Pr(5) =   1/1503
+         4:   2,  #      Pr(4) =   2/1503
+         3: 100,  #      Pr(3) = 100/1503
+         2: 700,  #      Pr(2) = 700/1503
+        -1: 700,  # Pr(No Bid) = 700/1503
     },
+    # This makes the probability of a 3+ bid in a 4 person game equal to
+    # 1 - (1 - 103.0/1503)**4 == 0.24720587624919865
 }
 
 
