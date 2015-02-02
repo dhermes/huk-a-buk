@@ -4,14 +4,31 @@ from deck import CARD_SUITS
 from game_play import CARDS_PER_HAND
 
 
+ASSUMPTIONS = {
+    'non_win_fold': 0.4,  # 40% chance of folding given non-winning bid.
+    'bids': {
+         5:  1,  #      Pr(5) = 1/100
+         4:  2,  #      Pr(4) = 2/100
+         3: 24,  #      Pr(3) = 24/100
+         2: 48,  #      Pr(2) = 48/100
+        -1: 25,  # Pr(No Bid) = 25/100
+    },
+}
+
+
 class RandomPlayer(object):
 
     MINIMUM_BID = 2
-    RANDOM_BIDS = ((5,) +       # Pr(5) = 1/100
-                   (4, 4) +     # Pr(4) = 2/100
-                   (3,) * 24 +  # Pr(3) = 24/100
-                   (2,) * 48 +  # Pr(2) = 48/100
-                   (-1,) * 25)  # Pr(No Bid) = 25/100
+
+    def __init__(self, random_bids=None):
+        if random_bids is None:
+            random_bids = (( 5,) * ASSUMPTIONS['bids'][5] +
+                           ( 4,) * ASSUMPTIONS['bids'][4] +
+                           ( 3,) * ASSUMPTIONS['bids'][3] +
+                           ( 2,) * ASSUMPTIONS['bids'][2] +
+                           (-1,) * ASSUMPTIONS['bids'][-1])
+
+        self.random_bids = random_bids
 
     def draw_cards(self, hand, unused_winning_bid):
         trump = hand.game.trump
@@ -27,7 +44,7 @@ class RandomPlayer(object):
             num_to_draw = random.randint(0, cards_to_ditch)
         else:
             # Fold 40% of the time.
-            if random.random() < 0.4:
+            if random.random() < ASSUMPTIONS['non_win_fold']:
                 num_to_draw = CARDS_PER_HAND + 1
             else:
                 num_to_draw = random.randint(0, cards_to_ditch)
@@ -51,7 +68,7 @@ class RandomPlayer(object):
         if hand.is_dealer and max_bid < self.MINIMUM_BID:
             return self.MINIMUM_BID, trump
 
-        bid_val = random.choice(self.RANDOM_BIDS)
+        bid_val = random.choice(self.random_bids)
         if bid_val > max_bid:
             return bid_val, trump
         else:
