@@ -1,4 +1,5 @@
 import argparse
+import random
 import time
 
 import deck
@@ -6,7 +7,8 @@ import game_play
 from player_types import RandomPlayer
 
 
-RESULTS_FILE_TMP = 'data/results-%d-%d.bindata'
+RESULTS_FILE_TMP = 'data/results-%d-%d%s.bindata'
+DEFAULT_SHUFFLER = 'default_shuffler'
 SEPARATOR = '|'
 STATUS_UPDATE = 5 * 10**4
 SERIALIZED_OUTCOMES = {
@@ -79,8 +81,35 @@ if SEPARATOR in deck.CARD_DESERIALIZE or SEPARATOR in DESERIALIZED_OUTCOMES:
     raise ValueError('Separator can not be used.')
 
 
-def simulate(num_players=4):
-    curr_deck = deck.random_deck()
+def default_shuffler(deck):
+    deck.shuffle()
+    return deck
+
+
+def ace_queen_shuffler(deck):
+    deck.shuffle()
+    # Pick a player to give A,Q of Hearts to.
+    player_with_aq = random.randint(0, 4)
+    # Put Ace of Hearts in position `player_with_aq` so that person gets it.
+    ace_hearts, = [i for i, card in enumerate(deck.cards)
+                   if card.suit == 'H' and card.value == 'A']
+    if ace_hearts != player_with_aq:
+        deck.cards[player_with_aq], deck.cards[ace_hearts] = (
+            deck.cards[ace_hearts], deck.cards[player_with_aq])
+
+    # Put Queen of Hearts in position (`player_with_aq` + 5) so that person
+    # gets it as their second card.
+    queen_hearts, = [i for i, card in enumerate(deck.cards)
+                     if card.suit == 'H' and card.value == 'Q']
+    if queen_hearts != player_with_aq + 5:
+        deck.cards[player_with_aq + 5], deck.cards[queen_hearts] = (
+            deck.cards[queen_hearts], deck.cards[player_with_aq + 5])
+
+    return deck
+
+
+def simulate(num_players=4, shuffler=default_shuffler):
+    curr_deck = shuffler(deck.random_deck())
     players = [RandomPlayer() for _ in xrange(num_players)]
     game = game_play.Game(curr_deck, players)
     game.play()
@@ -94,19 +123,23 @@ def simulate(num_players=4):
     return ''.join(hand_vals)
 
 
-def long_simulate(n):
+def long_simulate(n, shuffler=default_shuffler):
     print 'Simulating {:,} games'.format(n)
 
     start = time.time()
-    results_file = RESULTS_FILE_TMP % (time.time(), n)
+    shuffler_str = ''
+    if shuffler.__name__ != DEFAULT_SHUFFLER:
+        shuffler_str = '-%s' % (shuffler.__name__,)
+
+    results_file = RESULTS_FILE_TMP % (time.time(), n, shuffler_str)
     print 'Saving in %s.' % (results_file,)
     with open(results_file, 'wb') as fh:
         # Write the first so that separator only appears before.
         # Assumes n > 0.
-        fh.write(simulate())
+        fh.write(simulate(shuffler=shuffler))
         for i in xrange(2, n + 1):
             fh.write(SEPARATOR)
-            fh.write(simulate())
+            fh.write(simulate(shuffler=shuffler))
 
             if i % STATUS_UPDATE == 0:
                 message = '{:,} iterations: {} seconds'.format(
@@ -115,8 +148,18 @@ def long_simulate(n):
 
 
 if __name__ == '__main__':
+    shuffle_funcs = {
+        DEFAULT_SHUFFLER: default_shuffler,
+        'ace_queen_shuffler': ace_queen_shuffler,
+    }
     parser = argparse.ArgumentParser(description='Simulation Huk-A-Buk.')
     parser.add_argument('--num-games', dest='num_games', type=int,
                         required=True, help='Number of games to simulate.')
+    parser.add_argument('--shuffler', dest='shuffler',
+                        choices=tuple(shuffle_funcs.keys()),
+                        default=DEFAULT_SHUFFLER,
+                        help='Shuffler to use for simulation.')
     args = parser.parse_args()
-    long_simulate(args.num_games)
+
+    shuffler = shuffle_funcs[args.shuffler]
+    long_simulate(args.num_games, shuffler=shuffler)
