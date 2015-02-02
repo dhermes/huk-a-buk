@@ -22,6 +22,61 @@ CARD_SUITS = {
     'C': u'\u2663',
     'D': u'\u2666',
 }
+CARD_SERIALIZE = {
+    ('H', 2): chr(0),
+    ('H', 3): chr(1),
+    ('H', 4): chr(2),
+    ('H', 5): chr(3),
+    ('H', 6): chr(4),
+    ('H', 7): chr(5),
+    ('H', 8): chr(6),
+    ('H', 9): chr(7),
+    ('H', 10): chr(8),
+    ('H', 'J'): chr(9),
+    ('H', 'Q'): chr(10),
+    ('H', 'K'): chr(11),
+    ('H', 'A'): chr(12),
+    ('S', 2): chr(13),
+    ('S', 3): chr(14),
+    ('S', 4): chr(15),
+    ('S', 5): chr(16),
+    ('S', 6): chr(17),
+    ('S', 7): chr(18),
+    ('S', 8): chr(19),
+    ('S', 9): chr(20),
+    ('S', 10): chr(21),
+    ('S', 'J'): chr(22),
+    ('S', 'Q'): chr(23),
+    ('S', 'K'): chr(24),
+    ('S', 'A'): chr(25),
+    ('C', 2): chr(26),
+    ('C', 3): chr(27),
+    ('C', 4): chr(28),
+    ('C', 5): chr(29),
+    ('C', 6): chr(30),
+    ('C', 7): chr(31),
+    ('C', 8): chr(32),
+    ('C', 9): chr(33),
+    ('C', 10): chr(34),
+    ('C', 'J'): chr(35),
+    ('C', 'Q'): chr(36),
+    ('C', 'K'): chr(37),
+    ('C', 'A'): chr(38),
+    ('D', 2): chr(39),
+    ('D', 3): chr(40),
+    ('D', 4): chr(41),
+    ('D', 5): chr(42),
+    ('D', 6): chr(43),
+    ('D', 7): chr(44),
+    ('D', 8): chr(45),
+    ('D', 9): chr(46),
+    ('D', 10): chr(47),
+    ('D', 'J'): chr(48),
+    ('D', 'Q'): chr(49),
+    ('D', 'K'): chr(50),
+    ('D', 'A'): chr(51),
+}
+CARD_DESERIALIZE = {val: key for key, val in CARD_SERIALIZE.items()}
 
 
 class Card(object):
@@ -60,6 +115,13 @@ class Card(object):
         # If neither card is one of the relevant suits, their comparison
         # is irrelevant, but `self` is certainly not `is_better`.
         return False
+
+    def serialize(self):
+        return CARD_SERIALIZE[(self.suit, self.value)]
+
+    @classmethod
+    def deserialize(cls, char):
+        return cls(*CARD_DESERIALIZE[char])
 
 
 class Deck(object):
