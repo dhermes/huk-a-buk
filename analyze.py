@@ -1,5 +1,6 @@
 import argparse
 import glob
+import json
 import os
 
 import deck
@@ -7,12 +8,53 @@ from long_simulation import DESERIALIZED_OUTCOMES
 from long_simulation import SEPARATOR
 
 
-def do_nothing_analyze(game_result):
-    pass
+class DoNothingAnalyzer(object):
+
+    def __call__(self, game_result):
+        pass
+
+    def post_result(self):
+        pass
+
+
+class AceQueenAnalyzer(object):
+
+    def __init__(self):
+        self.counts = {}
+
+    def __call__(self, game_result):
+        trump = game_result[0]
+        # Unpack since we expect a single match.
+        winning_bidder, = [hand for hand in game_result[1:]
+                           if hand[6] != 0]
+
+        # Last 3 are: is_dealer, won_bid, tricks
+        key = tuple(winning_bidder[5:])
+
+        # First 5 are: cards
+        trump_dealt = set([card.value for card in winning_bidder[:5]
+                           if card.suit == trump and card.from_original_hand])
+        if trump_dealt == set(('A', 'Q')):
+            self.counts[key] = self.counts.get(key, 0) + 1
+
+    def post_result(self):
+        results_by_bid = {
+            2: {},
+            3: {},
+            4: {},
+            5: {},
+        }
+
+        for key, val in self.counts.iteritems():
+            _, won_bid, tricks = key
+            curr_tricks = results_by_bid[won_bid]
+            curr_tricks[tricks] = curr_tricks.get(tricks, 0) + 1
+
+        print json.dumps(results_by_bid, indent=2, sort_keys=True)
 
 
 def pick_filename():
-    files = glob.glob('*.bindata')
+    files = glob.glob('data/*.bindata')
     for i, filename in enumerate(files):
         print '%d: %s' % (i, filename)
 
@@ -75,10 +117,22 @@ def read_simulation(results_file, analyze_func):
 
 
 if __name__ == '__main__':
+    analyze_funcs = {
+        'do_nothing_analyze': DoNothingAnalyzer,
+        'analyze_ace_queen': AceQueenAnalyzer,
+    }
     parser = argparse.ArgumentParser(
-        description='Analyze simulated Huk-A-Buk games.')
+        description='Analyze simulated Huk-A-Buk games.',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--filename', dest='filename',
                         help='Filename containing simulated data.')
+    parser.add_argument('--analyze-func', dest='analyze_func',
+                        choices=tuple(analyze_funcs.keys()),
+                        default='do_nothing_analyze',
+                        help='Function used to analyze simulated data.')
     args = parser.parse_args()
     filename = args.filename or pick_filename()
-    read_simulation(filename, do_nothing_analyze)
+
+    analyzer = analyze_funcs[args.analyze_func]()
+    read_simulation(filename, analyzer)
+    analyzer.post_result()
