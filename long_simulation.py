@@ -6,7 +6,7 @@ import game_play
 from player_types import RandomPlayer
 
 
-RESULTS_FILE_TMP = 'results-%d-%d.bindata'
+RESULTS_FILE_TMP = 'data/results-%d-%d.bindata'
 SEPARATOR = '|'
 STATUS_UPDATE = 5 * 10**4
 SERIALIZED_OUTCOMES = {
