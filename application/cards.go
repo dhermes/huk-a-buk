@@ -3,16 +3,20 @@ package hukabuk
 import (
 	"errors"
 	"fmt"
+
+	"appengine"
+	"appengine/datastore"
+	"appengine/user"
 )
 
 var (
-	suits = map[byte]bool{
+	suits = map[int8]bool{
 		'H': true,
 		'S': true,
 		'C': true,
 		'D': true,
 	}
-	ranks = map[byte]uint8{ // Use 0 as empty key
+	ranks = map[int8]uint8{ // Use 0 as empty key
 		'2': 1,
 		'3': 2,
 		'4': 3,
@@ -30,15 +34,22 @@ var (
 )
 
 type Card struct {
-	Suit byte `json:"suit" endpoints:"required"`
-	Rank byte `json:"rank" endpoints:"required"`
+	// Use int8 instead of byte since App Engine needs it to be signed.
+	Suit int8 `json:"suit" endpoints:"required"`
+	Rank int8 `json:"rank" endpoints:"required"`
+}
+
+type Hand struct {
+	Cards []Card `json:"items"`
+	Email string `json:"-"`
+	Id    string `json:"-"`
 }
 
 // Make a new Card. Verifies that the suit and rank are among
 // the acceptable values (single bytes) where 'T', 'J', 'Q', 'K', 'A'
 // are used for ranks outside of 2-9 and 'H' -> Heart, 'S' -> Spades,
 // 'C' -> Clubs and 'D' -> Diamonds for suits.
-func NewCard(suit byte, rank byte) (*Card, error) {
+func NewCard(suit int8, rank int8) (*Card, error) {
 	card := &Card{}
 
 	if !suits[suit] {
@@ -58,7 +69,7 @@ func NewCard(suit byte, rank byte) (*Card, error) {
 // suit led on the current trick must be incorporated. In the case that
 // both cards don't match the trump or the lead suit, no comparison
 // between the two is relevant.
-func (card *Card) IsBetter(other *Card, trump byte, lead byte) bool {
+func (card *Card) IsBetter(other *Card, trump int8, lead int8) bool {
 	if card.Suit == other.Suit {
 		return ranks[card.Rank] > ranks[other.Rank]
 	}
@@ -81,4 +92,14 @@ func (card *Card) IsBetter(other *Card, trump byte, lead byte) bool {
 	// If neither card is one of the relevant suits, their comparison
 	// is irrelevant.
 	return false
+}
+
+func StoreHand(c appengine.Context, u *user.User, hand *Hand) error {
+	hand.Email = u.Email
+	// hand.Id = u.Id
+	key := datastore.NewKey(c, "UserHand", u.Email, 0, nil)
+	_, err := datastore.Put(c, key, hand)
+	c.Infof("Stored Hand")
+	// "datastore: unsupported struct field type: *hukabuk.Card",
+	return err
 }

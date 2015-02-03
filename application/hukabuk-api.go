@@ -19,16 +19,12 @@ var (
 type EmptyRequest struct {
 }
 
-type CardListResponse struct {
-	Items []*Card `json:"items"`
-}
-
 // Huk-A-Buk API service
 type HukABukApi struct {
 }
 
 func (hapi *HukABukApi) GetCards(r *http.Request,
-	req *EmptyRequest, resp *CardListResponse) error {
+	req *EmptyRequest, resp *Hand) error {
 
 	c := endpoints.NewContext(r)
 	u, err := getCurrentUser(c) // Not Used
@@ -37,23 +33,25 @@ func (hapi *HukABukApi) GetCards(r *http.Request,
 	}
 	c.Infof("%v", u)
 
-	resp.Items = []*Card{}
-
 	var card *Card
 	card, err = NewCard('H', '2')
-	resp.Items = append(resp.Items, card)
+	resp.Cards = append(resp.Cards, *card)
 
 	card, err = NewCard('S', '7')
-	resp.Items = append(resp.Items, card)
+	resp.Cards = append(resp.Cards, *card)
 
 	card, err = NewCard('C', 'T')
-	resp.Items = append(resp.Items, card)
+	resp.Cards = append(resp.Cards, *card)
 
 	card, err = NewCard('D', 'K')
-	resp.Items = append(resp.Items, card)
+	resp.Cards = append(resp.Cards, *card)
 
 	card, err = NewCard('H', 'A')
-	resp.Items = append(resp.Items, card)
+	resp.Cards = append(resp.Cards, *card)
+
+	if err == nil {
+		err = StoreHand(c, u, resp)
+	}
 
 	return err
 }
