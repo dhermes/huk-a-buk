@@ -50,6 +50,7 @@ type Card struct {
 type Hand struct {
 	Cards   []Card    `json:"cards"`
 	Created time.Time `json:"created"`
+	Email   string    `json:"-"`
 }
 
 // Make a new Card. Verifies that the suit and rank are among
@@ -122,8 +123,9 @@ func randomCard() (*Card, error) {
 	return NewCard(suit, rank)
 }
 
-func NewHand(hand *Hand) error {
+func NewHand(hand *Hand, u *userLocal) error {
 	hand.Created = time.Now().UTC()
+	hand.Email = u.Email
 
 	for i := 0; i < 5; i++ {
 		card, err := randomCard()
@@ -140,12 +142,13 @@ func GetOrCreateHand(c appengine.Context, u *userLocal, hand *Hand) error {
 	if err == nil {
 		hand.Cards = existingHand.Cards
 		hand.Created = existingHand.Created
+		hand.Email = existingHand.Email
 		return nil
 	}
 
 	// NOTE: This could be problematic since `hand` may be partially updated
 	//       before a failure.
-	err = NewHand(hand)
+	err = NewHand(hand, u)
 	if err != nil {
 		return err
 	}
