@@ -26,7 +26,7 @@ type HukABukApi struct {
 func (hapi *HukABukApi) GetCards(r *http.Request,
 	req *EmptyRequest, resp *Hand) error {
 
-	c := endpoints.NewContext(r)
+	c := NewContext(r)
 	u, err := getCurrentUser(c) // Not Used
 	if err != nil {
 		return err
@@ -59,8 +59,8 @@ func (hapi *HukABukApi) GetCards(r *http.Request,
 // getCurrentUser retrieves a user associated with the request.
 // If there's no user (e.g. no auth info present in the request) returns
 // an "unauthorized" error.
-func getCurrentUser(c endpoints.Context) (*user.User, error) {
-	u, err := endpoints.CurrentUser(c, scopes, audiences, clientIds)
+func getCurrentUser(c Context) (*user.User, error) {
+	u, err := CurrentUser(c, scopes, audiences, clientIds)
 	if err != nil {
 		return nil, err
 	}
