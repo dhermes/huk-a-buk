@@ -103,8 +103,8 @@ hukABukApp.queryCards = function() {
   gapi.client.hukabuk.cards.list({}).execute(function(resp) {
     var rank, suit;
     for (var i = 0; i < 5; i++) {
-      suit = String.fromCharCode(resp.items[i].suit);
-      rank = String.fromCharCode(resp.items[i].rank);
+      suit = String.fromCharCode(resp.cards[i].suit);
+      rank = String.fromCharCode(resp.cards[i].rank);
       hukABukApp.addCard(tdElts[i], suit, rank);
     }
   });

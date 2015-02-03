@@ -3,6 +3,7 @@ package hukabuk
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"appengine"
 	"appengine/datastore"
@@ -39,9 +40,8 @@ type Card struct {
 }
 
 type Hand struct {
-	Cards []Card `json:"items"`
-	Email string `json:"-"`
-	Id    string `json:"-"`
+	Cards   []Card    `json:"cards"`
+	Created time.Time `json:"created"`
 }
 
 // Make a new Card. Verifies that the suit and rank are among
@@ -93,11 +93,59 @@ func (card *Card) IsBetter(other *Card, trump int8, lead int8) bool {
 	return false
 }
 
-func StoreHand(c appengine.Context, u *userLocal, hand *Hand) error {
-	hand.Email = u.Email
+func GetHand(c appengine.Context, u *userLocal) (*Hand, error) {
 	key := datastore.NewKey(c, "UserHand", u.GooglePlusID, 0, nil)
-	_, err := datastore.Put(c, key, hand)
-	c.Infof("Stored Hand")
-	// "datastore: unsupported struct field type: *hukabuk.Card",
+	hand := &Hand{}
+	err := datastore.Get(c, key, hand)
+
+	if err == nil {
+		return hand, nil
+	} else {
+		// TODO(djh): Distinguish between a "good" error (key does not exist)
+		//            and a "bad" one (request failure).
+		c.Debugf("GetHand err: %v", err)
+		return nil, err
+	}
+}
+
+func NewHand(hand *Hand) error {
+	hand.Created = time.Now().UTC()
+	card, err := NewCard('H', '2')
+	hand.Cards = append(hand.Cards, *card)
+
+	card, err = NewCard('S', '7')
+	hand.Cards = append(hand.Cards, *card)
+
+	card, err = NewCard('C', 'T')
+	hand.Cards = append(hand.Cards, *card)
+
+	card, err = NewCard('D', 'K')
+	hand.Cards = append(hand.Cards, *card)
+
+	card, err = NewCard('H', 'A')
+	hand.Cards = append(hand.Cards, *card)
+
+	if err == nil {
+		return nil
+	} else {
+		return err
+	}
+}
+
+func GetOrCreateHand(c appengine.Context, u *userLocal, hand *Hand) error {
+	existingHand, err := GetHand(c, u)
+	if err == nil {
+		hand.Cards = existingHand.Cards
+		hand.Created = existingHand.Created
+		return nil
+	}
+
+	err = NewHand(hand)
+	if err != nil {
+		return err
+	}
+
+	key := datastore.NewKey(c, "UserHand", u.GooglePlusID, 0, nil)
+	_, err = datastore.Put(c, key, hand)
 	return err
 }

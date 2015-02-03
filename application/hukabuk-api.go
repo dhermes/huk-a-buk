@@ -31,27 +31,7 @@ func (hapi *HukABukApi) GetCards(r *http.Request,
 	}
 	c.Infof("%v", u)
 
-	var card *Card
-	card, err = NewCard('H', '2')
-	resp.Cards = append(resp.Cards, *card)
-
-	card, err = NewCard('S', '7')
-	resp.Cards = append(resp.Cards, *card)
-
-	card, err = NewCard('C', 'T')
-	resp.Cards = append(resp.Cards, *card)
-
-	card, err = NewCard('D', 'K')
-	resp.Cards = append(resp.Cards, *card)
-
-	card, err = NewCard('H', 'A')
-	resp.Cards = append(resp.Cards, *card)
-
-	if err == nil {
-		err = StoreHand(c, u, resp)
-	}
-
-	return err
+	return GetOrCreateHand(c, u, resp)
 }
 
 // getCurrentUser retrieves a user associated with the request.
