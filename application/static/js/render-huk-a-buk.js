@@ -11,19 +11,19 @@ hukABukApp.SUITS = {
     'D': '\u2666'
 }
 hukABukApp.RANKS = {
-    1: '2',
-    2: '3',
-    3: '4',
-    4: '5',
-    5: '6',
-    6: '7',
-    7: '8',
-    8: '9',
-    9: '10',
-    10: 'J',
-    11: 'Q',
-    12: 'K',
-    13: 'A'
+    '2': '2',
+    '3': '3',
+    '4': '4',
+    '5': '5',
+    '6': '6',
+    '7': '7',
+    '8': '8',
+    '9': '9',
+    'T': '10',
+    'J': 'J',
+    'Q': 'Q',
+    'K': 'K',
+    'A': 'A'
 }
 
 /**
@@ -99,23 +99,35 @@ hukABukApp.addCard = function(tdElt, suit, rank) {
 }
 
 hukABukApp.queryCards = function() {
-    var cardElt = document.getElementById('cards');
-    if (!cardElt) {
-        console.log('No cards element found on page.');
-        return;
-    }
-    var tdElts = cardElt.getElementsByTagName('td');
-    if (tdElts.length !== 5) {
-        console.log('Expected 5 TD elements.');
-        return;
-    }
+  var cardElt = document.getElementById('cards');
+  if (!cardElt) {
+    console.log('No cards element found on page.');
+    return;
+  }
+  var tdElts = cardElt.getElementsByTagName('td');
+  if (tdElts.length !== 5) {
+    console.log('Expected 5 TD elements.');
+    return;
+  }
 
-    // Fake a response.
-    hukABukApp.addCard(tdElts[0], 'H', 1);
-    hukABukApp.addCard(tdElts[1], 'S', 6);
-    hukABukApp.addCard(tdElts[2], 'C', 9);
-    hukABukApp.addCard(tdElts[3], 'D', 12);
-    hukABukApp.addCard(tdElts[4], 'H', 13);
+  gapi.client.hukabuk.cards.list({}).execute(function(resp) {
+    var rank, suit;
+    for (var i = 0; i < 5; i++) {
+      suit = String.fromCharCode(resp.items[i].suit);
+      rank = String.fromCharCode(resp.items[i].rank);
+      hukABukApp.addCard(tdElts[i], suit, rank);
+    }
+  });
+}
+
+hukABukApp.init = function(apiRoot, tokenEmail) {
+  // Loads the Huk-A-Buk API asynchronously, and triggers login
+  // in the UI when loading has completed.
+  var callback = function() {
+    document.getElementById('userLabel').innerHTML = tokenEmail;
+    hukABukApp.queryCards();
+  }
+  gapi.client.load('hukabuk', 'v1beta', callback, apiRoot);
 }
 
 /**
@@ -133,13 +145,13 @@ hukABukApp.signinCallback = function(authResult) {
   if (authResult.access_token && tokenEmail) {
     document.getElementById('warning').classList.add('hidden');
     document.getElementById('cards').classList.remove('hidden');
-    document.getElementById('userLabel').innerHTML = tokenEmail;
+
+    hukABukApp.init('//' + window.location.host + '/_ah/api',
+                    tokenEmail);
 
     document.getElementById('signinButtonContainer').classList.remove(
         'visible');
     document.getElementById('signedInStatus').classList.add('visible');
-
-    hukABukApp.queryCards();
   } else {
     document.getElementById('warning').classList.remove('hidden');
     document.getElementById('cards').classList.add('hidden');
