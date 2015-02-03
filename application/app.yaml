@@ -2,5 +2,23 @@ runtime: go
 api_version: go1
 
 handlers:
-- url: /.*
+# Static assets
+- url: /favicon\.ico
+  static_files: favicon.ico
+  upload: favicon\.ico
+- url: /js
+  static_dir: static/js
+- url: /css
+  static_dir: static/css
+- url: /images
+  static_dir: static/images
+- url: /
+  static_files: static/tictactoe.html
+  upload: static/tictactoe\.html
+- url: /foo
+  script: _go_app
+
+# Even though there's catch all routing, without these two lines
+# endpoints is not going to work.
+- url: /_ah/spi/.*
   script: _go_app

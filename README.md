@@ -136,3 +136,31 @@ Pr(Win 4 tricks) = 0.207028
 Pr(Win 5 tricks) = 0.217723
 ============================================================
 ```
+
+## Go Application
+
+To handle requests, we use [`go-endpoints`][1]:
+
+```
+go get -u github.com/GoogleCloudPlatform/go-endpoints/endpoints
+```
+
+For local testing, visit the [APIs explorer][2] after starting
+up the application
+
+```
+$ goapp serve ${GIT_ROOT}/application/
+```
+
+In order to make auth work correctly, the file
+
+```
+application/static/js/config.js
+```
+
+needs to be created (it is `gitignore`d). See a [sample][3]
+for a template.
+
+[1]: https://github.com/GoogleCloudPlatform/go-endpoints
+[2]: http://localhost:8080/_ah/api/explorer
+[3]: https://github.com/dhermes/huk-a-buk/blob/master/application/static/js/config.js.sample

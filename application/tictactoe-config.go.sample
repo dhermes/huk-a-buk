@@ -1,0 +1,3 @@
+package hukabuk
+
+const ClientID = "YOUR-CLIENT-ID"
