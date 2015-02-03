@@ -9,8 +9,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"strings"
+	"sync"
 
 	"appengine"
 )
@@ -31,27 +33,72 @@ type tokeninfo struct {
 	ErrorDescription string `json:"error_description"`
 }
 
-// fetchTokeninfo retrieves token info from tokeninfoEndpointURL  (tokeninfo API)
-func fetchTokeninfo(c Context, token string) (*tokeninfo, error) {
+// A context that uses tokeninfo API to validate bearer token
+type cachingTokeninfoContext struct {
+	appengine.Context
+	r *http.Request
+	// map keys as scopes
+	responseCache map[string]*[]byte
+	// mutex for oauthResponseCache
+	sync.Mutex
+}
+
+func populateTokenInfoResponse(c *cachingTokeninfoContext, token string, scope string) error {
+	// Only one scope should be cached at once, so we just destroy the cache
+	c.responseCache = map[string]*[]byte{}
+
+	// Construct the URL to get the token.
 	url := tokeninfoEndpointURL + "?access_token=" + token
 	c.Debugf("Fetching token info from %q", url)
 	resp, err := newHTTPClient(c).Get(url)
 	if err != nil {
-		return nil, err
+		return err
 	}
+	// Make sure to close if the request did not fail.
 	defer resp.Body.Close()
-	c.Debugf("Tokeninfo replied with %s", resp.Status)
 
-	ti := &tokeninfo{}
-	if err = json.NewDecoder(resp.Body).Decode(ti); err != nil {
-		return nil, err
-	}
+	c.Debugf("Tokeninfo replied with %s", resp.Status)
 	if resp.StatusCode != http.StatusOK {
 		errMsg := fmt.Sprintf("Error fetching tokeninfo (status %d)", resp.StatusCode)
-		if ti.ErrorDescription != "" {
-			errMsg += ": " + ti.ErrorDescription
+		return errors.New(errMsg)
+	}
+
+	var content []byte
+	content, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+
+	}
+
+	c.responseCache[scope] = &content
+	return nil
+}
+
+func getTokenInfoResponse(c *cachingTokeninfoContext, token string, scope string) (*[]byte, error) {
+	res, ok := c.responseCache[scope]
+
+	if !ok {
+		c.Lock()
+		defer c.Unlock()
+		if err := populateTokenInfoResponse(c, token, scope); err != nil {
+			return nil, err
 		}
-		return nil, errors.New(errMsg)
+		res = c.responseCache[scope]
+	}
+
+	return res, nil
+}
+
+// fetchTokeninfo retrieves token info from tokeninfoEndpointURL  (tokeninfo API)
+func fetchTokeninfo(c *cachingTokeninfoContext, token string, scope string) (*tokeninfo, error) {
+	responseBody, err := getTokenInfoResponse(c, token, scope)
+	if err != nil {
+		return nil, err
+	}
+
+	ti := &tokeninfo{}
+	if err = json.Unmarshal(*responseBody, ti); err != nil {
+		return nil, err
 	}
 
 	switch {
@@ -63,22 +110,17 @@ func fetchTokeninfo(c Context, token string) (*tokeninfo, error) {
 		return nil, fmt.Errorf("Invalid email address")
 	}
 
-	c.Infof("================================================")
-	c.Infof("================================================")
-	c.Infof("From fetchTokeninfo: %v", ti)
-	c.Infof("================================================")
-	c.Infof("================================================")
 	return ti, err
 }
 
 // getScopedTokeninfo validates fetched token by matching tokeinfo.Scope
 // with scope arg.
-func getScopedTokeninfo(c Context, scope string) (*tokeninfo, error) {
+func getScopedTokeninfo(c *cachingTokeninfoContext, scope string) (*tokeninfo, error) {
 	token := getToken(c.HTTPRequest())
 	if token == "" {
 		return nil, errors.New("No token found")
 	}
-	ti, err := fetchTokeninfo(c, token)
+	ti, err := fetchTokeninfo(c, token, scope)
 	if err != nil {
 		return nil, err
 	}
@@ -91,26 +133,26 @@ func getScopedTokeninfo(c Context, scope string) (*tokeninfo, error) {
 		ti.Scope, scope)
 }
 
-// A context that uses tokeninfo API to validate bearer token
-type tokeninfoContext struct {
-	appengine.Context
+func newTokenCachingContext(c appengine.Context, r *http.Request) Context {
+	return &cachingTokeninfoContext{c, r, map[string]*[]byte{}, sync.Mutex{}}
 }
 
-func (c *tokeninfoContext) HTTPRequest() *http.Request {
-	return c.Request().(*http.Request)
+func (c *cachingTokeninfoContext) HTTPRequest() *http.Request {
+	// WAS: c.Request().(*http.Request)
+	return c.r
 }
 
 // Namespace returns a replacement context that operates within the given namespace.
-func (c *tokeninfoContext) Namespace(name string) (Context, error) {
+func (c *cachingTokeninfoContext) Namespace(name string) (Context, error) {
 	nc, err := appengine.Namespace(c, name)
 	if err != nil {
 		return nil, err
 	}
-	return &tokeninfoContext{nc}, nil
+	return newTokenCachingContext(nc, c.r), nil
 }
 
 // CurrentOAuthClientID returns a clientID associated with the scope.
-func (c *tokeninfoContext) CurrentOAuthClientID(scope string) (string, error) {
+func (c *cachingTokeninfoContext) CurrentOAuthClientID(scope string) (string, error) {
 	ti, err := getScopedTokeninfo(c, scope)
 	if err != nil {
 		return "", err
@@ -119,7 +161,7 @@ func (c *tokeninfoContext) CurrentOAuthClientID(scope string) (string, error) {
 }
 
 // CurrentOAuthUser returns a user associated with the request in context.
-func (c *tokeninfoContext) CurrentOAuthUser(scope string) (*userLocal, error) {
+func (c *cachingTokeninfoContext) CurrentOAuthUser(scope string) (*userLocal, error) {
 	ti, err := getScopedTokeninfo(c, scope)
 	if err != nil {
 		return nil, err
@@ -130,9 +172,8 @@ func (c *tokeninfoContext) CurrentOAuthUser(scope string) (*userLocal, error) {
 	}, nil
 }
 
-// tokeninfoContextFactory creates a new tokeninfoContext from r.
+// cachingTokeninfoContextFactory creates a new cachingTokeninfoContext from r.
 // To be used as auth.go/ContextFactory.
-func tokeninfoContextFactory(r *http.Request) Context {
-	ac := appengine.NewContext(r)
-	return &tokeninfoContext{ac}
+func cachingTokeninfoContextFactory(r *http.Request) Context {
+	return newTokenCachingContext(appengine.NewContext(r), r)
 }

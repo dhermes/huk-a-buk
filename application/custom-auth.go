@@ -426,12 +426,6 @@ func verifySignedJWT(c Context, jwt string, now int64) (*signedJWT, error) {
 // Returns true if token passes verification and can be accepted as indicated
 // by audiences and clientIDs args.
 func verifyParsedToken(c Context, token signedJWT, audiences []string, clientIDs []string) bool {
-	c.Infof("================================================")
-	c.Infof("================================================")
-	c.Infof("From verifyParsedToken: %v", token)
-	c.Infof("================================================")
-	c.Infof("================================================")
-
 	// Verify the issuer.
 	if token.Issuer != "accounts.google.com" {
 		c.Warningf("Issuer was not valid: %s", token.Issuer)
@@ -597,7 +591,7 @@ func newHTTPClient(c appengine.Context) *http.Client {
 
 func init() {
 	if appengine.IsDevAppServer() {
-		ContextFactory = tokeninfoContextFactory
+		ContextFactory = cachingTokeninfoContextFactory
 	} else {
 		ContextFactory = cachingContextFactory
 	}
