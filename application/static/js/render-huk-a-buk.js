@@ -133,6 +133,11 @@ hukABukApp.signinCallback = function(authResult) {
   var tokenEmail = hukABukApp.getEmailFromIDToken(
       authResult.id_token);
   if (authResult.access_token && tokenEmail) {
+    // BEGIN: Hack to make sure ID tokens are sent in request.
+    var token = gapi.auth.getToken();
+    token.access_token = token.id_token;
+    gapi.auth.setToken(token);
+    //   END: Hack to make sure ID tokens are sent in request.
     document.getElementById('warning').classList.add('hidden');
     document.getElementById('cards').classList.remove('hidden');
 

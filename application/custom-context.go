@@ -25,7 +25,6 @@ import (
 	"sync"
 
 	"appengine"
-	"appengine/user"
 
 	pb "appengine_internal/user"
 )
@@ -99,17 +98,15 @@ func (c *cachingContext) CurrentOAuthClientID(scope string) (string, error) {
 // It caches OAuth info at the first call for future invocations.
 //
 // Returns an error if data for this scope is not available.
-func (c *cachingContext) CurrentOAuthUser(scope string) (*user.User, error) {
+func (c *cachingContext) CurrentOAuthUser(scope string) (*userLocal, error) {
 	res, err := getOAuthResponse(c, scope)
 	if err != nil {
 		return nil, err
 	}
 
-	return &user.User{
-		Email:      *res.Email,
-		AuthDomain: *res.AuthDomain,
-		Admin:      res.GetIsAdmin(),
-		ID:         *res.UserId,
+	// We aren't using *res.AuthDomain, res.GetIsAdmin(), or *res.UserId,
+	return &userLocal{
+		Email: *res.Email,
 	}, nil
 }
 

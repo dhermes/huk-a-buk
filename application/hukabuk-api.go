@@ -4,8 +4,6 @@ import (
 	"errors"
 	"net/http"
 
-	"appengine/user"
-
 	"github.com/GoogleCloudPlatform/go-endpoints/endpoints"
 )
 
@@ -59,7 +57,7 @@ func (hapi *HukABukApi) GetCards(r *http.Request,
 // getCurrentUser retrieves a user associated with the request.
 // If there's no user (e.g. no auth info present in the request) returns
 // an "unauthorized" error.
-func getCurrentUser(c Context) (*user.User, error) {
+func getCurrentUser(c Context) (*userLocal, error) {
 	u, err := CurrentUser(c, scopes, audiences, clientIds)
 	if err != nil {
 		return nil, err

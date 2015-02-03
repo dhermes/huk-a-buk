@@ -19,7 +19,6 @@ import (
 	"appengine"
 	"appengine/memcache"
 	"appengine/urlfetch" // From urlfetch.go in go-endpoints
-	"appengine/user"
 )
 
 const (
@@ -83,7 +82,7 @@ type Context interface {
 	// It caches OAuth info at the first call for future invocations.
 	//
 	// Returns an error if data for this scope is not available.
-	CurrentOAuthUser(scope string) (*user.User, error)
+	CurrentOAuthUser(scope string) (*userLocal, error)
 }
 
 // NewContext returns a new context for an in-flight API (HTTP) request.
@@ -254,7 +253,16 @@ type signedJWT struct {
 	Expires  int64  `json:"exp"`
 	IssuedAt int64  `json:"iat"`
 	Issuer   string `json:"iss"`
+	Subject  string `json:"sub"` // DJH: Edit
 }
+
+// BEGIN: DJH Custom Class
+type userLocal struct {
+	Email        string
+	GooglePlusID string
+}
+
+//   END: DJH Custom Class
 
 // addBase64Pad pads s to be a valid base64-encoded string.
 func addBase64Pad(s string) string {
@@ -418,6 +426,12 @@ func verifySignedJWT(c Context, jwt string, now int64) (*signedJWT, error) {
 // Returns true if token passes verification and can be accepted as indicated
 // by audiences and clientIDs args.
 func verifyParsedToken(c Context, token signedJWT, audiences []string, clientIDs []string) bool {
+	c.Infof("================================================")
+	c.Infof("================================================")
+	c.Infof("From verifyParsedToken: %v", token)
+	c.Infof("================================================")
+	c.Infof("================================================")
+
 	// Verify the issuer.
 	if token.Issuer != "accounts.google.com" {
 		c.Warningf("Issuer was not valid: %s", token.Issuer)
@@ -460,19 +474,20 @@ func verifyParsedToken(c Context, token signedJWT, audiences []string, clientIDs
 	return true
 }
 
-// currentIDTokenUser returns "appengine/user".User object if provided JWT token
+// currentIDTokenUser returns userLocal object if provided JWT token
 // was successfully decoded and passed all verifications.
 //
 // Currently, only Email field will be set in case of success.
-func currentIDTokenUser(c Context, jwt string, audiences []string, clientIDs []string, now int64) (*user.User, error) {
+func currentIDTokenUser(c Context, jwt string, audiences []string, clientIDs []string, now int64) (*userLocal, error) {
 	parsedToken, err := jwtParser(c, jwt, now)
 	if err != nil {
 		return nil, err
 	}
 
 	if verifyParsedToken(c, *parsedToken, audiences, clientIDs) {
-		return &user.User{
-			Email: parsedToken.Email,
+		return &userLocal{
+			Email:        parsedToken.Email,
+			GooglePlusID: parsedToken.Subject,
 		}, nil
 	}
 
@@ -515,7 +530,7 @@ func CurrentBearerTokenScope(c Context, scopes []string, clientIDs []string) (st
 // Returns an error if the client did not make a valid request, or none of
 // clientIDs are allowed to make requests, or user did not authorize any of
 // the scopes.
-func CurrentBearerTokenUser(c Context, scopes []string, clientIDs []string) (*user.User, error) {
+func CurrentBearerTokenUser(c Context, scopes []string, clientIDs []string) (*userLocal, error) {
 	scope, err := CurrentBearerTokenScope(c, scopes, clientIDs)
 	if err != nil {
 		return nil, err
@@ -530,7 +545,7 @@ func CurrentBearerTokenUser(c Context, scopes []string, clientIDs []string) (*us
 // and falls back to Bearer token.
 //
 // NOTE: Currently, returned user will have only Email field set when JWT is used.
-func CurrentUser(c Context, scopes []string, audiences []string, clientIDs []string) (*user.User, error) {
+func CurrentUser(c Context, scopes []string, audiences []string, clientIDs []string) (*userLocal, error) {
 	// The user hasn't provided any information to allow us to parse either
 	// an ID token or a Bearer token.
 	if len(scopes) == 0 && len(audiences) == 0 && len(clientIDs) == 0 {
@@ -552,12 +567,17 @@ func CurrentUser(c Context, scopes []string, audiences []string, clientIDs []str
 		// Only return in case of success, else pass along and try
 		// parsing Bearer token.
 		if err == nil {
-			return u, err
+			return u, nil
 		}
 	}
 
 	c.Debugf("Checking for Bearer token.")
-	return CurrentBearerTokenUser(c, scopes, clientIDs)
+	u, err := CurrentBearerTokenUser(c, scopes, clientIDs)
+	if u != nil {
+		return u, err
+	} else {
+		return nil, err
+	}
 }
 
 // BEGIN: Snippet from urlfetch.go in go-endpoints

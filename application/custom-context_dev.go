@@ -13,7 +13,6 @@ import (
 	"strings"
 
 	"appengine"
-	"appengine/user"
 )
 
 const tokeninfoEndpointURL = "https://www.googleapis.com/oauth2/v2/tokeninfo"
@@ -21,7 +20,7 @@ const tokeninfoEndpointURL = "https://www.googleapis.com/oauth2/v2/tokeninfo"
 type tokeninfo struct {
 	IssuedTo      string `json:"issued_to"`
 	Audience      string `json:"audience"`
-	UserID        string `json:"user_id"`
+	UserID        string `json:"user_id"` // Equivalent of `Subject`
 	Scope         string `json:"scope"`
 	ExpiresIn     int    `json:"expires_in"`
 	Email         string `json:"email"`
@@ -64,6 +63,11 @@ func fetchTokeninfo(c Context, token string) (*tokeninfo, error) {
 		return nil, fmt.Errorf("Invalid email address")
 	}
 
+	c.Infof("================================================")
+	c.Infof("================================================")
+	c.Infof("From fetchTokeninfo: %v", ti)
+	c.Infof("================================================")
+	c.Infof("================================================")
 	return ti, err
 }
 
@@ -115,12 +119,15 @@ func (c *tokeninfoContext) CurrentOAuthClientID(scope string) (string, error) {
 }
 
 // CurrentOAuthUser returns a user associated with the request in context.
-func (c *tokeninfoContext) CurrentOAuthUser(scope string) (*user.User, error) {
+func (c *tokeninfoContext) CurrentOAuthUser(scope string) (*userLocal, error) {
 	ti, err := getScopedTokeninfo(c, scope)
 	if err != nil {
 		return nil, err
 	}
-	return &user.User{Email: ti.Email}, nil
+	return &userLocal{
+		Email:        ti.Email,
+		GooglePlusID: ti.UserID,
+	}, nil
 }
 
 // tokeninfoContextFactory creates a new tokeninfoContext from r.

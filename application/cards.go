@@ -6,7 +6,6 @@ import (
 
 	"appengine"
 	"appengine/datastore"
-	"appengine/user"
 )
 
 var (
@@ -94,10 +93,9 @@ func (card *Card) IsBetter(other *Card, trump int8, lead int8) bool {
 	return false
 }
 
-func StoreHand(c appengine.Context, u *user.User, hand *Hand) error {
+func StoreHand(c appengine.Context, u *userLocal, hand *Hand) error {
 	hand.Email = u.Email
-	// hand.Id = u.Id
-	key := datastore.NewKey(c, "UserHand", u.Email, 0, nil)
+	key := datastore.NewKey(c, "UserHand", u.GooglePlusID, 0, nil)
 	_, err := datastore.Put(c, key, hand)
 	c.Infof("Stored Hand")
 	// "datastore: unsupported struct field type: *hukabuk.Card",
