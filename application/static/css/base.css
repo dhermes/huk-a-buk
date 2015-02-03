@@ -76,6 +76,15 @@ body {
   display: none;
 }
 
+/* Card styles */
+span.red {
+  color: red;
+}
+
+span.black {
+  color: black;
+}
+
 /* Board styles */
 table {
   text-align: center;

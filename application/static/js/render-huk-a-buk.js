@@ -4,6 +4,28 @@ google.config = google.config || {};
 
 var hukABukApp = hukABukApp || {};
 
+hukABukApp.SUITS = {
+    'H': '\u2665',
+    'S': '\u2660',
+    'C': '\u2663',
+    'D': '\u2666'
+}
+hukABukApp.RANKS = {
+    1: '2',
+    2: '3',
+    3: '4',
+    4: '5',
+    5: '6',
+    6: '7',
+    7: '8',
+    8: '9',
+    9: '10',
+    10: 'J',
+    11: 'Q',
+    12: 'K',
+    13: 'A'
+}
+
 /**
  * Client ID of the application (from the APIs Console).
  * @type {string}
@@ -54,6 +76,48 @@ hukABukApp.getEmailFromIDToken = function(idToken) {
   }
 }
 
+hukABukApp.addCard = function(tdElt, suit, rank) {
+    var sp = document.createElement('span');
+    var colorClass;
+    if (suit === 'H' || suit === 'D') {
+        colorClass = "red";
+    } else if (suit === 'C' || suit === 'S') {
+        colorClass = "black";
+    } else {
+        console.log('Unexpected suit.');
+        return;
+    }
+
+    if (!(rank in hukABukApp.RANKS)) {
+        console.log('Unexpected rank.');
+        return;
+    }
+
+    sp.innerHTML = hukABukApp.SUITS[suit] + hukABukApp.RANKS[rank];
+    sp.classList.add(colorClass);
+    tdElt.appendChild(sp);
+}
+
+hukABukApp.queryCards = function() {
+    var cardElt = document.getElementById('cards');
+    if (!cardElt) {
+        console.log('No cards element found on page.');
+        return;
+    }
+    var tdElts = cardElt.getElementsByTagName('td');
+    if (tdElts.length !== 5) {
+        console.log('Expected 5 TD elements.');
+        return;
+    }
+
+    // Fake a response.
+    hukABukApp.addCard(tdElts[0], 'H', 1);
+    hukABukApp.addCard(tdElts[1], 'S', 6);
+    hukABukApp.addCard(tdElts[2], 'C', 9);
+    hukABukApp.addCard(tdElts[3], 'D', 12);
+    hukABukApp.addCard(tdElts[4], 'H', 13);
+}
+
 /**
  * Handles the Google+ Sign In response.
  *
@@ -74,6 +138,8 @@ hukABukApp.signinCallback = function(authResult) {
     document.getElementById('signinButtonContainer').classList.remove(
         'visible');
     document.getElementById('signedInStatus').classList.add('visible');
+
+    hukABukApp.queryCards();
   } else {
     document.getElementById('warning').classList.remove('hidden');
     document.getElementById('cards').classList.add('hidden');
