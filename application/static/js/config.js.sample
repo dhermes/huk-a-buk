@@ -1,3 +1,2 @@
-var google = google || {};
-google.config = google.config || {};
-google.config.CLIENT_ID = 'YOUR-CLIENT-ID';
+var hukABukApp = hukABukApp || {};
+hukABukApp.CLIENT_ID = 'YOUR-CLIENT-ID';

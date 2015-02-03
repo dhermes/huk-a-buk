@@ -1,7 +1,3 @@
-/* Re-use Google namespace. */
-var google = google || {};
-google.config = google.config || {};
-
 var hukABukApp = hukABukApp || {};
 
 hukABukApp.SUITS = {
@@ -25,12 +21,6 @@ hukABukApp.RANKS = {
     'K': 'K',
     'A': 'A'
 }
-
-/**
- * Client ID of the application (from the APIs Console).
- * @type {string}
- */
-hukABukApp.CLIENT_ID = google.config.CLIENT_ID;
 
 /**
  * Scopes used by the application.
@@ -169,6 +159,11 @@ hukABukApp.signinCallback = function(authResult) {
     }
   }
 };
+
+hukABukApp.signout = function() {
+  document.getElementById('signinButtonContainer').classList.add('visible');
+  document.getElementById('signedInStatus').classList.remove('visible');
+}
 
 /**
  * Renders the Google+ Sign-in button using auth parameters.
