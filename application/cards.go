@@ -3,6 +3,7 @@ package hukabuk
 import (
 	"errors"
 	"fmt"
+	"math/rand"
 	"time"
 
 	"appengine"
@@ -16,6 +17,8 @@ var (
 		'C': true,
 		'D': true,
 	}
+	suitsList = []int8{'H', 'S', 'C', 'D'}
+
 	ranks = map[int8]uint8{ // Use 0 as empty key
 		'2': 1,
 		'3': 2,
@@ -30,6 +33,11 @@ var (
 		'Q': 11,
 		'K': 12,
 		'A': 13,
+	}
+	rankList = []int8{
+		'2', '3', '4', '5',
+		'6', '7', '8', '9',
+		'T', 'J', 'Q', 'K', 'A',
 	}
 )
 
@@ -108,28 +116,23 @@ func GetHand(c appengine.Context, u *userLocal) (*Hand, error) {
 	}
 }
 
+func randomCard() (*Card, error) {
+	suit := suitsList[rand.Intn(len(suitsList))]
+	rank := rankList[rand.Intn(len(rankList))]
+	return NewCard(suit, rank)
+}
+
 func NewHand(hand *Hand) error {
 	hand.Created = time.Now().UTC()
-	card, err := NewCard('H', '2')
-	hand.Cards = append(hand.Cards, *card)
 
-	card, err = NewCard('S', '7')
-	hand.Cards = append(hand.Cards, *card)
-
-	card, err = NewCard('C', 'T')
-	hand.Cards = append(hand.Cards, *card)
-
-	card, err = NewCard('D', 'K')
-	hand.Cards = append(hand.Cards, *card)
-
-	card, err = NewCard('H', 'A')
-	hand.Cards = append(hand.Cards, *card)
-
-	if err == nil {
-		return nil
-	} else {
-		return err
+	for i := 0; i < 5; i++ {
+		card, err := randomCard()
+		if err != nil {
+			return err
+		}
+		hand.Cards = append(hand.Cards, *card)
 	}
+	return nil
 }
 
 func GetOrCreateHand(c appengine.Context, u *userLocal, hand *Hand) error {
@@ -140,6 +143,8 @@ func GetOrCreateHand(c appengine.Context, u *userLocal, hand *Hand) error {
 		return nil
 	}
 
+	// NOTE: This could be problematic since `hand` may be partially updated
+	//       before a failure.
 	err = NewHand(hand)
 	if err != nil {
 		return err
