@@ -1,7 +1,10 @@
 package hukabuk
 
 import (
+	"errors"
 	"net/http"
+
+	"appengine/user"
 
 	"github.com/GoogleCloudPlatform/go-endpoints/endpoints"
 )
@@ -27,24 +30,47 @@ type HukABukApi struct {
 func (hapi *HukABukApi) GetCards(r *http.Request,
 	req *EmptyRequest, resp *CardListResponse) error {
 
+	c := endpoints.NewContext(r)
+	u, err := getCurrentUser(c) // Not Used
+	if err != nil {
+		return err
+	}
+	c.Infof("%v", u)
+
 	resp.Items = []*Card{}
 
-	c, err := NewCard('H', '2')
-	resp.Items = append(resp.Items, c)
+	var card *Card
+	card, err = NewCard('H', '2')
+	resp.Items = append(resp.Items, card)
 
-	c, err = NewCard('S', '7')
-	resp.Items = append(resp.Items, c)
+	card, err = NewCard('S', '7')
+	resp.Items = append(resp.Items, card)
 
-	c, err = NewCard('C', 'T')
-	resp.Items = append(resp.Items, c)
+	card, err = NewCard('C', 'T')
+	resp.Items = append(resp.Items, card)
 
-	c, err = NewCard('D', 'K')
-	resp.Items = append(resp.Items, c)
+	card, err = NewCard('D', 'K')
+	resp.Items = append(resp.Items, card)
 
-	c, err = NewCard('H', 'A')
-	resp.Items = append(resp.Items, c)
+	card, err = NewCard('H', 'A')
+	resp.Items = append(resp.Items, card)
 
 	return err
+}
+
+// getCurrentUser retrieves a user associated with the request.
+// If there's no user (e.g. no auth info present in the request) returns
+// an "unauthorized" error.
+func getCurrentUser(c endpoints.Context) (*user.User, error) {
+	u, err := endpoints.CurrentUser(c, scopes, audiences, clientIds)
+	if err != nil {
+		return nil, err
+	}
+	if u == nil {
+		return nil, errors.New("Unauthorized: Please, sign in.")
+	}
+	c.Debugf("Current user: %#v", u)
+	return u, nil
 }
 
 // RegisterService exposes HukABukApi methods as API endpoints.
