@@ -9,7 +9,7 @@ import (
 var (
 	scopes    = []string{endpoints.EmailScope}
 	clientIds = []string{ClientID, endpoints.APIExplorerClientID}
-	// in case we'll want to use TicTacToe API from an Android app
+	// in case we'll want to use Huk-A-Buk API from an Android app
 	audiences = []string{ClientID}
 )
 
