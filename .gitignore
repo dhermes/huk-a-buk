@@ -2,4 +2,4 @@
 pkg/
 src/
 application/static/js/config.js
-application/tictactoe-config.go
+application/api-config.go

@@ -30,8 +30,8 @@ var (
 )
 
 type Card struct {
-	Suit byte
-	Rank byte
+	Suit byte `json:"suit" endpoints:"required"`
+	Rank byte `json:"rank" endpoints:"required"`
 }
 
 // Make a new Card. Verifies that the suit and rank are among
