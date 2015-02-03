@@ -146,23 +146,16 @@ func GetHand(c appengine.Context, u *userLocal) (*Hand, error) {
 	}
 }
 
-func randomCard() (*Card, error) {
-	suit := suitsList[rand.Intn(len(suitsList))]
-	rank := rankList[rand.Intn(len(rankList))]
-	return NewCard(suit, rank)
-}
-
 func NewHand(hand *Hand, u *userLocal) error {
 	hand.Created = time.Now().UTC()
 	hand.Email = u.Email
 
-	for i := 0; i < 5; i++ {
-		card, err := randomCard()
-		if err != nil {
-			return err
-		}
-		hand.Cards = append(hand.Cards, *card)
+	deck, err := NewDeck()
+	if err != nil {
+		return err
 	}
+	deck.Shuffle()
+	hand.Cards = deck.Cards[:5]
 	return nil
 }
 
