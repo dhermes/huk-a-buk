@@ -15,6 +15,9 @@ handlers:
 - url: /
   static_files: static/tictactoe.html
   upload: static/tictactoe\.html
+- url: /play-huk-a-buk
+  static_files: static/play-huk-a-buk.html
+  upload: static/play-huk-a-buk\.html
 - url: /foo
   script: _go_app
 

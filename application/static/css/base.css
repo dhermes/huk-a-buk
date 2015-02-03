@@ -36,7 +36,7 @@ body {
   background-color: whiteSmoke;
   border-bottom: 1pt solid #E5E5E5;
 }
-#board, #warning {
+#board, #warning, #cards {
   margin: 1em;
   display: -webkit-box;
   -webkit-box-orient: vertical;
