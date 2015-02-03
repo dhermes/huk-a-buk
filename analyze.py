@@ -48,9 +48,18 @@ class AceQueenAnalyzer(object):
         for key, val in self.counts.iteritems():
             _, won_bid, tricks = key
             curr_tricks = results_by_bid[won_bid]
-            curr_tricks[tricks] = curr_tricks.get(tricks, 0) + 1
+            curr_tricks[tricks] = curr_tricks.get(tricks, 0) + val
 
-        print json.dumps(results_by_bid, indent=2, sort_keys=True)
+        for bid_amt in sorted(results_by_bid.keys()):
+            tricks_dict = results_by_bid[bid_amt]
+            total_tricks = sum(tricks_dict.values())
+            print 'Bid: %d, Total Tricks: %d' % (bid_amt, total_tricks)
+            total_tricks = 1.0 * total_tricks
+            for num_tricks in range(5 + 1):
+                probability = tricks_dict.get(num_tricks, 0) / total_tricks
+                print 'Pr(Win %d tricks) = %g' % (num_tricks, probability)
+
+            print '=' * 60
 
 
 def pick_filename():

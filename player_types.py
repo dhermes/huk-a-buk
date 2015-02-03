@@ -66,9 +66,13 @@ class RandomPlayer(object):
 
         return num_to_draw
 
-    def make_bid(self, hand, max_bid):
+    @staticmethod
+    def _choose_trump(hand):
         hand_suits = [card.suit for card in hand.unplayed_cards]
-        trump = random.choice(hand_suits)
+        return random.choice(hand_suits)
+
+    def make_bid(self, hand, max_bid):
+        trump = self._choose_trump(hand)
         if hand.is_dealer and max_bid < self.MINIMUM_BID:
             return self.MINIMUM_BID, trump
 
