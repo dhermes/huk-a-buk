@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"strings"
 	"sync"
@@ -38,67 +37,32 @@ type cachingTokeninfoContext struct {
 	appengine.Context
 	r *http.Request
 	// map keys as scopes
-	responseCache map[string]*[]byte
-	// mutex for oauthResponseCache
+	tokeninfoCache map[string]*tokeninfo
+	// mutex for tokeninfoCache
 	sync.Mutex
 }
 
-func populateTokenInfoResponse(c *cachingTokeninfoContext, token string, scope string) error {
-	// Only one scope should be cached at once, so we just destroy the cache
-	c.responseCache = map[string]*[]byte{}
-
-	// Construct the URL to get the token.
+// fetchTokeninfo retrieves token info from tokeninfoEndpointURL  (tokeninfo API)
+func fetchTokeninfo(c *cachingTokeninfoContext, token string) (*tokeninfo, error) {
 	url := tokeninfoEndpointURL + "?access_token=" + token
 	c.Debugf("Fetching token info from %q", url)
 	resp, err := newHTTPClient(c).Get(url)
 	if err != nil {
-		return err
-	}
-	// Make sure to close if the request did not fail.
-	defer resp.Body.Close()
-
-	c.Debugf("Tokeninfo replied with %s", resp.Status)
-	if resp.StatusCode != http.StatusOK {
-		errMsg := fmt.Sprintf("Error fetching tokeninfo (status %d)", resp.StatusCode)
-		return errors.New(errMsg)
-	}
-
-	var content []byte
-	content, err = ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return err
-
-	}
-
-	c.responseCache[scope] = &content
-	return nil
-}
-
-func getTokenInfoResponse(c *cachingTokeninfoContext, token string, scope string) (*[]byte, error) {
-	res, ok := c.responseCache[scope]
-
-	if !ok {
-		c.Lock()
-		defer c.Unlock()
-		if err := populateTokenInfoResponse(c, token, scope); err != nil {
-			return nil, err
-		}
-		res = c.responseCache[scope]
-	}
-
-	return res, nil
-}
-
-// fetchTokeninfo retrieves token info from tokeninfoEndpointURL  (tokeninfo API)
-func fetchTokeninfo(c *cachingTokeninfoContext, token string, scope string) (*tokeninfo, error) {
-	responseBody, err := getTokenInfoResponse(c, token, scope)
-	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
+	c.Debugf("Tokeninfo replied with %s", resp.Status)
 
 	ti := &tokeninfo{}
-	if err = json.Unmarshal(*responseBody, ti); err != nil {
+	if err = json.NewDecoder(resp.Body).Decode(ti); err != nil {
 		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		errMsg := fmt.Sprintf("Error fetching tokeninfo (status %d)", resp.StatusCode)
+		if ti.ErrorDescription != "" {
+			errMsg += ": " + ti.ErrorDescription
+		}
+		return nil, errors.New(errMsg)
 	}
 
 	switch {
@@ -113,28 +77,47 @@ func fetchTokeninfo(c *cachingTokeninfoContext, token string, scope string) (*to
 	return ti, err
 }
 
-// getScopedTokeninfo validates fetched token by matching tokeinfo.Scope
-// with scope arg.
-func getScopedTokeninfo(c *cachingTokeninfoContext, scope string) (*tokeninfo, error) {
+func populateTokenInfo(c *cachingTokeninfoContext, scope string) error {
+	// Only one scope should be cached at once, so we just destroy the cache
+	c.tokeninfoCache = map[string]*tokeninfo{}
+
 	token := getToken(c.HTTPRequest())
 	if token == "" {
-		return nil, errors.New("No token found")
+		return errors.New("No token found")
 	}
-	ti, err := fetchTokeninfo(c, token, scope)
+	ti, err := fetchTokeninfo(c, token)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	for _, s := range strings.Split(ti.Scope, " ") {
 		if s == scope {
-			return ti, nil
+			c.tokeninfoCache[scope] = ti
+			return nil
 		}
 	}
-	return nil, fmt.Errorf("No scope matches: expected one of %q, got %q",
+	return fmt.Errorf("No scope matches: expected one of %q, got %q",
 		ti.Scope, scope)
 }
 
+// getScopedTokeninfo validates fetched token by matching tokeninfo.Scope
+// with scope arg.
+func getScopedTokeninfo(c *cachingTokeninfoContext, scope string) (*tokeninfo, error) {
+	ti, ok := c.tokeninfoCache[scope]
+
+	if !ok {
+		c.Lock()
+		defer c.Unlock()
+		if err := populateTokenInfo(c, scope); err != nil {
+			return nil, err
+		}
+		ti = c.tokeninfoCache[scope]
+	}
+
+	return ti, nil
+}
+
 func newTokenCachingContext(c appengine.Context, r *http.Request) Context {
-	return &cachingTokeninfoContext{c, r, map[string]*[]byte{}, sync.Mutex{}}
+	return &cachingTokeninfoContext{c, r, map[string]*tokeninfo{}, sync.Mutex{}}
 }
 
 func (c *cachingTokeninfoContext) HTTPRequest() *http.Request {
