@@ -590,9 +590,5 @@ func newHTTPClient(c appengine.Context) *http.Client {
 //   END: Snippet from urlfetch.go in go-endpoints
 
 func init() {
-	if appengine.IsDevAppServer() {
-		ContextFactory = cachingTokeninfoContextFactory
-	} else {
-		ContextFactory = cachingContextFactory
-	}
+	ContextFactory = cachingTokeninfoContextFactory
 }
