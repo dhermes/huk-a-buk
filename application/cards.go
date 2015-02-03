@@ -47,6 +47,10 @@ type Card struct {
 	Rank int8 `json:"rank" endpoints:"required"`
 }
 
+type Deck struct {
+	Cards [52]Card
+}
+
 type Hand struct {
 	Cards   []Card    `json:"cards"`
 	Created time.Time `json:"created"`
@@ -100,6 +104,31 @@ func (card *Card) IsBetter(other *Card, trump int8, lead int8) bool {
 	// If neither card is one of the relevant suits, their comparison
 	// is irrelevant.
 	return false
+}
+
+// Make a new unshuffled Deck.
+func NewDeck() (*Deck, error) {
+	deck := &Deck{}
+	index := 0
+	for _, suit := range suitsList {
+		for _, rank := range rankList {
+			card, err := NewCard(suit, rank)
+			if err != nil {
+				return nil, err
+			}
+			deck.Cards[index] = *card
+			index++
+		}
+	}
+	return deck, nil
+}
+
+func (deck *Deck) Shuffle() {
+	newCards := [52]Card{}
+	for i, permIndex := range rand.Perm(52) {
+		newCards[i] = deck.Cards[permIndex]
+	}
+	deck.Cards = newCards
 }
 
 func GetHand(c appengine.Context, u *userLocal) (*Hand, error) {
