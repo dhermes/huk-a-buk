@@ -131,7 +131,8 @@ func (card *Card) IsBetter(other *Card, trump byte, lead byte) bool {
 
 func (deck *Deck) Shuffle() {
 	deck.currIndex = 0
-	perm := rand.Perm(52)
+	// H/T to: http://stackoverflow.com/a/12321192/1068170
+	perm := rand.New(rand.NewSource(time.Now().UTC().UnixNano())).Perm(52)
 	deck.cards = &perm
 }
 
