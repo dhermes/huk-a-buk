@@ -34,15 +34,8 @@ type GetGamesResponse struct {
 }
 
 func GetGames(c appengine.Context, u *userLocal, resp *GetGamesResponse) error {
-	gameId := int64(5865619656278016)
-	game := &Game{}
-	err := GetGame(c, gameId, game)
-	if err == nil {
-		resp.Games = []Game{*game}
-		return nil
-	} else {
-		return err
-	}
+	resp.Games = make([]Game, 0)
+	return nil
 }
 
 func StartGame(c appengine.Context, u *userLocal, game *Game) error {
