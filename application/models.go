@@ -34,8 +34,16 @@ type GetGamesResponse struct {
 }
 
 func GetGames(c appengine.Context, u *userLocal, resp *GetGamesResponse) error {
-	resp.Games = make([]Game, 0)
-	return nil
+	q := datastore.NewQuery("Game").Filter("Players =", u.GooglePlusID)
+	keys, err := q.GetAll(c, &resp.Games)
+	if err == nil {
+		for i, key := range keys {
+			resp.Games[i].Id = key.IntID()
+		}
+		return nil
+	} else {
+		return err
+	}
 }
 
 func StartGame(c appengine.Context, u *userLocal, game *Game) error {
@@ -49,7 +57,7 @@ func StartGame(c appengine.Context, u *userLocal, game *Game) error {
 		c.Infof("error failure: %v", err)
 		return endpoints.NewBadRequestError("Creating game failed.")
 	}
+	// key.IntID() will not be populated.
 	game.Id = newKey.IntID()
-	c.Infof("newKey.IntID(): %v, key.IntID(): %v", game.Id, key.IntID())
 	return nil
 }
