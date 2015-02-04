@@ -1,8 +1,6 @@
 package hukabuk
 
 import (
-	"errors"
-	"fmt"
 	"math/rand"
 	"time"
 
@@ -110,25 +108,6 @@ type Hand struct {
 	Cards   []Card    `json:"cards"`
 	Created time.Time `json:"created"`
 	Email   string    `json:"-"`
-}
-
-// Make a new Card. Verifies that the suit and rank are among
-// the acceptable values (single bytes) where 'T', 'J', 'Q', 'K', 'A'
-// are used for ranks outside of 2-9 and 'H' -> Heart, 'S' -> Spades,
-// 'C' -> Clubs and 'D' -> Diamonds for suits.
-func NewCard(suit int8, rank int8) (*Card, error) {
-	card := &Card{}
-
-	if !suits[suit] {
-		return nil, errors.New(fmt.Sprintf("Invalid suit: %q.", suit))
-	}
-	card.Suit = suit
-
-	if ranks[rank] == 0 {
-		return nil, errors.New(fmt.Sprintf("Invalid rank: %q.", rank))
-	}
-	card.Rank = rank
-	return card, nil
 }
 
 // IsBetter compares a card to another during a hand of Huk-A-Buk. In
