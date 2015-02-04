@@ -1,6 +1,8 @@
 package hukabuk
 
 import (
+	"time"
+
 	"appengine"
 	"appengine/datastore"
 
@@ -47,7 +49,7 @@ func GetGames(c appengine.Context, u *userLocal, resp *GetGamesResponse) error {
 	}
 }
 
-func StartGame(c appengine.Context, u *userLocal, players []string, game *Game) error {
+func NewGame(c appengine.Context, u *userLocal, players []string, game *Game) error {
 	key := datastore.NewIncompleteKey(c, "Game", nil)
 	game.Players = append(game.Players, u.GooglePlusID)
 	// TODO(djh): Make this unique (or don't? queries won't fail).
@@ -62,7 +64,52 @@ func StartGame(c appengine.Context, u *userLocal, players []string, game *Game) 
 		c.Infof("error failure: %v", err)
 		return endpoints.NewBadRequestError("Creating game failed.")
 	}
-	// key.IntID() will not be populated.
+	// NOTE: key.IntID() will not be populated.
 	game.Id = newKey.IntID()
 	return nil
+}
+
+func StartGame(c appengine.Context, game *Game) error {
+	if game.Deck.CurrIndex != 0 {
+		return endpoints.NewBadRequestError("Deck in new game must have all cards.")
+	}
+	if game.Deck.CardBytes == nil {
+		return endpoints.NewBadRequestError("Deck in new game must be shuffled.")
+	}
+
+	hands := make([]*Hand, len(game.Players))
+	created := time.Now().UTC()
+	for hand, _ := range hands {
+		hands[hand] = &Hand{
+			Created: created,
+			Ranks:   make([]byte, 5),
+			Suits:   make([]byte, 5),
+		}
+	}
+
+	// Put the players in a random order and create hands.
+	playingOrder := seededPerm(len(game.Players))
+	for i := 0; i < 5; i++ { // Loop over cards 1-5
+		// Each player gets card 1, then 2, etc. in same (random) order
+		for _, index := range playingOrder {
+			card := game.Deck.NextCard()
+			hands[index].Ranks[i] = card.Rank
+			hands[index].Suits[i] = card.Suit
+		}
+	}
+
+	gameKey := datastore.NewKey(c, "Game", "", game.Id, nil)
+	// TODO(djh): Put these transactionally.
+	for _, index := range playingOrder {
+		key := datastore.NewKey(c, "Hand", game.Players[index], 0, gameKey)
+		_, err := datastore.Put(c, key, hands[index])
+		if err != nil {
+			return err
+		}
+
+	}
+
+	// Update the game after dealing the cards.
+	_, err := datastore.Put(c, gameKey, game)
+	return err
 }

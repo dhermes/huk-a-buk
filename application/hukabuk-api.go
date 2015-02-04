@@ -13,19 +13,31 @@ var (
 	audiences = []string{ClientID}
 )
 
-type EmptyRequest struct {
+// getCurrentUser retrieves a user associated with the request.
+// If there's no user (e.g. no auth info present in the request) returns
+// an "unauthorized" error.
+func getCurrentUser(c Context) (*userLocal, error) {
+	u, err := CurrentUser(c, scopes, audiences, clientIds)
+	if err != nil || u == nil {
+		return nil, endpoints.NewUnauthorizedError("Request not authorized.")
+	}
+	c.Debugf("Current user: %#v", u)
+	return u, nil
+}
+
+type EmptyAPIStruct struct {
 }
 
 // Huk-A-Buk API service
 type HukABukApi struct {
 }
 
-type GetCardsRequest struct {
+type GameIDRequest struct {
 	GameId int64 `json:"game,string"`
 }
 
 func (hapi *HukABukApi) GetCards(r *http.Request,
-	req *GetCardsRequest, resp *Hand) error {
+	req *GameIDRequest, resp *Hand) error {
 	c := NewContext(r)
 	c.Infof("req: %v", req)
 	u, err := getCurrentUser(c)
@@ -39,7 +51,6 @@ func (hapi *HukABukApi) GetCards(r *http.Request,
 		resp.Ranks = hand.Ranks
 		resp.Suits = hand.Suits
 		resp.Created = hand.Created
-		resp.Email = hand.Email
 	}
 	return err
 }
@@ -74,11 +85,11 @@ func (hapi *HukABukApi) NewGame(r *http.Request,
 	if err != nil {
 		return err
 	}
-	return StartGame(c, u, req.Players, resp)
+	return NewGame(c, u, req.Players, resp)
 }
 
 func (hapi *HukABukApi) GetGames(r *http.Request,
-	req *EmptyRequest, resp *GetGamesResponse) error {
+	req *EmptyAPIStruct, resp *GetGamesResponse) error {
 	c := NewContext(r)
 	u, err := getCurrentUser(c)
 	if err != nil {
@@ -87,16 +98,30 @@ func (hapi *HukABukApi) GetGames(r *http.Request,
 	return GetGames(c, u, resp)
 }
 
-// getCurrentUser retrieves a user associated with the request.
-// If there's no user (e.g. no auth info present in the request) returns
-// an "unauthorized" error.
-func getCurrentUser(c Context) (*userLocal, error) {
-	u, err := CurrentUser(c, scopes, audiences, clientIds)
-	if err != nil || u == nil {
-		return nil, endpoints.NewUnauthorizedError("Request not authorized.")
+func (hapi *HukABukApi) StartGame(r *http.Request,
+	req *GameIDRequest, resp *EmptyAPIStruct) error {
+	c := NewContext(r)
+	u, err := getCurrentUser(c)
+	if err != nil {
+		return err
 	}
-	c.Debugf("Current user: %#v", u)
-	return u, nil
+	game := &Game{}
+	err = GetGame(c, req.GameId, game)
+	if err != nil {
+		return err
+	}
+	userInGame := false
+	for _, player := range game.Players {
+		if u.GooglePlusID == player {
+			userInGame = true
+			break
+		}
+	}
+	if !userInGame {
+		return endpoints.NewForbiddenError("User not in game.")
+	}
+
+	return StartGame(c, game)
 }
 
 // RegisterService exposes HukABukApi methods as API endpoints.
@@ -129,6 +154,10 @@ func RegisterService() (*endpoints.RPCService, error) {
 
 	info = rpcService.MethodByName("GetGames").Info()
 	info.Path, info.HTTPMethod, info.Name = "games", "GET", "game.list"
+	info.Scopes, info.ClientIds, info.Audiences = scopes, clientIds, audiences
+
+	info = rpcService.MethodByName("StartGame").Info()
+	info.Path, info.HTTPMethod, info.Name = "games/{game}/start", "POST", "game.start"
 	info.Scopes, info.ClientIds, info.Audiences = scopes, clientIds, audiences
 
 	return rpcService, nil

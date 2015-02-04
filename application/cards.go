@@ -96,7 +96,6 @@ type Hand struct {
 	Suits   []byte    `json:"suits"`
 	Ranks   []byte    `json:"ranks"`
 	Created time.Time `json:"created"`
-	Email   string    `json:"-"`
 }
 
 // IsBetter compares a card to another during a hand of Huk-A-Buk. In
@@ -129,12 +128,16 @@ func (card *Card) IsBetter(other *Card, trump byte, lead byte) bool {
 	return false
 }
 
+func seededPerm(n int) []int {
+	// H/T to: http://stackoverflow.com/a/12321192/1068170
+	source := rand.NewSource(time.Now().UTC().UnixNano())
+	return rand.New(source).Perm(n)
+}
+
 func (deck *Deck) Shuffle() {
 	deck.CurrIndex = 0
 	numCards := 52
-	// H/T to: http://stackoverflow.com/a/12321192/1068170
-	source := rand.NewSource(time.Now().UTC().UnixNano())
-	intPerm := rand.New(source).Perm(numCards)
+	intPerm := seededPerm(numCards)
 
 	perm := make([]byte, numCards)
 	for i, value := range intPerm {
@@ -168,44 +171,4 @@ func GetHand(c appengine.Context, u *userLocal, gameId int64) (*Hand, error) {
 		c.Debugf("GetHand err: %v", err)
 		return nil, err
 	}
-}
-
-func NewHand(hand *Hand, u *userLocal) error {
-	hand.Created = time.Now().UTC()
-	hand.Email = u.Email
-
-	deck := &Deck{}
-	deck.Shuffle()
-
-	hand.Ranks = make([]byte, 5)
-	hand.Suits = make([]byte, 5)
-	for i := 0; i < 5; i++ {
-		card := deck.NextCard()
-		hand.Ranks[i] = card.Rank
-		hand.Suits[i] = card.Suit
-	}
-	return nil
-}
-
-func GetOrCreateHand(c appengine.Context, u *userLocal, gameId int64, hand *Hand) error {
-	existingHand, err := GetHand(c, u, gameId)
-	if err == nil {
-		hand.Ranks = existingHand.Ranks
-		hand.Suits = existingHand.Suits
-		hand.Created = existingHand.Created
-		hand.Email = existingHand.Email
-		return nil
-	}
-
-	// NOTE: This could be problematic since `hand` may be partially updated
-	//       before a failure.
-	err = NewHand(hand, u)
-	if err != nil {
-		return err
-	}
-
-	parentKey := datastore.NewKey(c, "Game", "", gameId, nil)
-	key := datastore.NewKey(c, "Hand", u.GooglePlusID, 0, parentKey)
-	_, err = datastore.Put(c, key, hand)
-	return err
 }
