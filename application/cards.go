@@ -87,7 +87,7 @@ type Card struct {
 }
 
 type Deck struct {
-	cards     *[]int8
+	CardBytes []byte `json:"cardBytes" datastore:"cardBytes"`
 	currIndex int8
 }
 
@@ -135,19 +135,19 @@ func (deck *Deck) Shuffle() {
 	source := rand.NewSource(time.Now().UTC().UnixNano())
 	intPerm := rand.New(source).Perm(numCards)
 
-	perm := make([]int8, numCards)
+	perm := make([]byte, numCards)
 	for i, value := range intPerm {
-		perm[i] = int8(value)
+		perm[i] = byte(value)
 	}
-	deck.cards = &perm
+	deck.CardBytes = perm
 }
 
 func (deck *Deck) NextCard() Card {
 	var cardIndex int8
-	if deck.cards == nil {
+	if deck.CardBytes == nil {
 		cardIndex = deck.currIndex
 	} else {
-		cardIndex = (*deck.cards)[deck.currIndex]
+		cardIndex = int8(deck.CardBytes[deck.currIndex])
 	}
 	deck.currIndex++
 	return unshuffledDeck[cardIndex]
