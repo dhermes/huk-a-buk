@@ -88,7 +88,7 @@ type Card struct {
 }
 
 type Deck struct {
-	cards     *[]int // TODO(djh): Would prefer to use int8.
+	cards     *[]int8
 	currIndex int8
 }
 
@@ -131,8 +131,15 @@ func (card *Card) IsBetter(other *Card, trump byte, lead byte) bool {
 
 func (deck *Deck) Shuffle() {
 	deck.currIndex = 0
+	numCards := 52
 	// H/T to: http://stackoverflow.com/a/12321192/1068170
-	perm := rand.New(rand.NewSource(time.Now().UTC().UnixNano())).Perm(52)
+	source := rand.NewSource(time.Now().UTC().UnixNano())
+	intPerm := rand.New(source).Perm(numCards)
+
+	perm := make([]int8, numCards)
+	for i, value := range intPerm {
+		perm[i] = int8(value)
+	}
 	deck.cards = &perm
 }
 
@@ -141,7 +148,7 @@ func (deck *Deck) NextCard() Card {
 	if deck.cards == nil {
 		cardIndex = deck.currIndex
 	} else {
-		cardIndex = int8((*deck.cards)[deck.currIndex])
+		cardIndex = (*deck.cards)[deck.currIndex]
 	}
 	deck.currIndex++
 	return unshuffledDeck[cardIndex]
