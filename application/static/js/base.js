@@ -22,10 +22,6 @@ hukABukApp.RANKS = {
     'A': 'A'
 }
 
-/**
- * Scopes used by the application.
- * @type {string}
- */
 hukABukApp.SCOPES =
     'https://www.googleapis.com/auth/userinfo.email ' +
     'https://www.googleapis.com/auth/plus.login';
@@ -66,69 +62,7 @@ hukABukApp.getEmailFromIDToken = function(idToken) {
   }
 }
 
-hukABukApp.addCard = function(tdElt, suit, rank) {
-    var sp = document.createElement('span');
-    var colorClass;
-    if (suit === 'H' || suit === 'D') {
-        colorClass = "red";
-    } else if (suit === 'C' || suit === 'S') {
-        colorClass = "black";
-    } else {
-        console.log('Unexpected suit.');
-        return;
-    }
-
-    if (!(rank in hukABukApp.RANKS)) {
-        console.log('Unexpected rank.');
-        return;
-    }
-
-    sp.innerHTML = hukABukApp.SUITS[suit] + hukABukApp.RANKS[rank];
-    sp.classList.add(colorClass);
-    tdElt.appendChild(sp);
-}
-
-hukABukApp.queryCards = function() {
-  var cardElt = document.getElementById('cards');
-  if (!cardElt) {
-    console.log('No cards element found on page.');
-    return;
-  }
-  var tdElts = cardElt.getElementsByTagName('td');
-  if (tdElts.length !== 5) {
-    console.log('Expected 5 TD elements.');
-    return;
-  }
-
-  gapi.client.hukabuk.cards.list({}).execute(function(resp) {
-    var suits = atob(resp.suits);
-    var ranks = atob(resp.ranks);
-    for (var i = 0; i < 5; i++) {
-      hukABukApp.addCard(tdElts[i], suits[i], ranks[i]);
-    }
-  });
-}
-
-hukABukApp.init = function(apiRoot, tokenEmail) {
-  // Loads the Huk-A-Buk API asynchronously, and triggers login
-  // in the UI when loading has completed.
-  var callback = function() {
-    document.getElementById('userLabel').innerHTML = tokenEmail;
-    hukABukApp.queryCards();
-  }
-  gapi.client.load('hukabuk', 'v1beta', callback, apiRoot);
-}
-
-/**
- * Handles the Google+ Sign In response.
- *
- * Success calls hukABukApp.init. Failure makes the Sign-In
- * button visible.
- *
- * @param {Object} authResult The contents returned from the Google+
- *                            Sign In attempt.
- */
-hukABukApp.signinCallback = function(authResult) {
+hukABukApp.baseSigninCallback = function(authResult) {
   var tokenEmail = hukABukApp.getEmailFromIDToken(
       authResult.id_token);
   if (authResult.access_token && tokenEmail) {
@@ -138,20 +72,18 @@ hukABukApp.signinCallback = function(authResult) {
     gapi.auth.setToken(token);
     //   END: Hack to make sure ID tokens are sent in request.
     document.getElementById('warning').classList.add('hidden');
-    document.getElementById('cards').classList.remove('hidden');
-
-    hukABukApp.init('//' + window.location.host + '/_ah/api',
-                    tokenEmail);
 
     document.getElementById('signinButtonContainer').classList.remove(
         'visible');
-    document.getElementById('signedInStatus').classList.add('visible');
+    document.getElementById('signedInTopLeft').classList.add('visible');
+    document.getElementById('userLabel').innerHTML = tokenEmail;
+
+    return true;
   } else {
     document.getElementById('warning').classList.remove('hidden');
-    document.getElementById('cards').classList.add('hidden');
 
     document.getElementById('signinButtonContainer').classList.add('visible');
-    document.getElementById('signedInStatus').classList.remove('visible');
+    document.getElementById('signedInTopLeft').classList.remove('visible');
 
     if (!authResult.error) {
       console.log('Unexpected result');
@@ -161,38 +93,28 @@ hukABukApp.signinCallback = function(authResult) {
     } else {
       console.log('Immediate mode failed, user needs to click Sign In.');
     }
+    return false;
   }
 };
 
-hukABukApp.signout = function() {
-  document.getElementById('signinButtonContainer').classList.add('visible');
-  document.getElementById('signedInStatus').classList.remove('visible');
-}
-
-/**
- * Renders the Google+ Sign-in button using auth parameters.
- */
-hukABukApp.renderHukABuk = function() {
+hukABukApp.renderSigninButton = function(callback) {
   gapi.signin.render('signinButton', {
-    'callback': hukABukApp.signinCallback,
+    'callback': callback,
     'clientid': hukABukApp.CLIENT_ID,
     'cookiepolicy': 'single_host_origin',
     'requestvisibleactions': 'http://schemas.google.com/AddActivity',
     'scope': hukABukApp.SCOPES
   });
 };
-// A quirk of the JSONP callback of the plusone client makes it so
-// our callback must exist as an element in window.
-window['hukABukApp.renderHukABuk'] = hukABukApp.renderHukABuk;
 
 // Recommended code to load Google+ JS library.
-(function() {
+hukABukApp.loadGoogle = function(onloadStr) {
   var newScriptElement = document.createElement('script');
   newScriptElement.type = 'text/javascript';
   newScriptElement.async = true;
   newScriptElement.src = 'https://apis.google.com/js/client:plusone.js' +
-                         '?onload=hukABukApp.renderHukABuk';
+                         '?onload=' + onloadStr;
   var firstScriptElement = document.getElementsByTagName('script')[0];
   firstScriptElement.parentNode.insertBefore(newScriptElement,
                                              firstScriptElement);
-})();
+}

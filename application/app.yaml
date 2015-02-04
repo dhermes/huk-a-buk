@@ -16,12 +16,13 @@ handlers:
 - url: /images
   static_dir: static/images
   secure: always
-- url: /
-  static_files: static/play-huk-a-buk.html
-  upload: static/play-huk-a-buk\.html
+- url: /game
+  static_files: static/game.html
+  upload: static/game\.html
   secure: always
-- url: /foo
-  script: _go_app
+- url: /
+  static_files: static/main.html
+  upload: static/main\.html
   secure: always
 
 # Even though there's catch all routing, without these two lines

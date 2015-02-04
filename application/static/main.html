@@ -6,7 +6,8 @@
     <!-- Config must be loaded first. -->
     <script type="text/javascript" src="/js/config.js"></script>
     <link rel="stylesheet" href="/css/base.css" />
-    <script type="text/javascript" src="/js/render-huk-a-buk.js"></script>
+    <script type="text/javascript" src="/js/base.js"></script>
+    <script type="text/javascript" src="/js/main.js"></script>
   </head>
   <body>
     <div id="content">
@@ -17,25 +18,13 @@
           <div id="signinButtonContainer" class="visible">
             <div id="signinButton"></div>
           </div>
-          <a href="#" onclick="hukABukApp.signout();" id="signedInStatus">Sign Out</a>
+          <div id="signedInTopLeft"></div>
         </div>
         <span id="userLabel">(not signed in)</span>
       </div>
       <div id="warning">
         <img src="/images/caution.gif" />
-        <p>You must sign in to play!</p>
-      </div>
-      <div id="cards" class="hidden">
-        <h1>Cards</h1>
-        <table>
-          <tr>
-            <td class="noLeft noTop noBottom"></td>
-            <td class="noTop noBottom"></td>
-            <td class="noTop noBottom"></td>
-            <td class="noTop noBottom"></td>
-            <td class="noRight noTop noBottom"></td>
-          </tr>
-        <table>
+        <p>You must sign in</p>
       </div>
     </div>
   </body>
