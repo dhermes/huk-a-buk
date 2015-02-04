@@ -9,15 +9,8 @@ import (
 )
 
 var (
-	suits = map[int8]bool{
-		'H': true,
-		'S': true,
-		'C': true,
-		'D': true,
-	}
-	suitsList = []int8{'H', 'S', 'C', 'D'}
-
-	ranks = map[int8]uint8{ // Use 0 as empty key
+	suitsList = []byte{'H', 'S', 'C', 'D'}
+	ranks     = map[byte]uint8{
 		'2': 1,
 		'3': 2,
 		'4': 3,
@@ -31,11 +24,6 @@ var (
 		'Q': 11,
 		'K': 12,
 		'A': 13,
-	}
-	rankList = []int8{
-		'2', '3', '4', '5',
-		'6', '7', '8', '9',
-		'T', 'J', 'Q', 'K', 'A',
 	}
 	unshuffledDeck = map[int8]Card{
 		0:  Card{Suit: 'H', Rank: '2'},
@@ -95,8 +83,8 @@ var (
 
 type Card struct {
 	// Use int8 instead of byte since App Engine needs it to be signed.
-	Suit int8 `json:"suit" endpoints:"required"`
-	Rank int8 `json:"rank" endpoints:"required"`
+	Suit byte `json:"suit" endpoints:"required"`
+	Rank byte `json:"rank" endpoints:"required"`
 }
 
 type Deck struct {
@@ -105,7 +93,8 @@ type Deck struct {
 }
 
 type Hand struct {
-	Cards   []Card    `json:"cards"`
+	Suits   []byte    `json:"suits"`
+	Ranks   []byte    `json:"ranks"`
 	Created time.Time `json:"created"`
 	Email   string    `json:"-"`
 }
@@ -115,7 +104,7 @@ type Hand struct {
 // suit led on the current trick must be incorporated. In the case that
 // both cards don't match the trump or the lead suit, no comparison
 // between the two is relevant.
-func (card *Card) IsBetter(other *Card, trump int8, lead int8) bool {
+func (card *Card) IsBetter(other *Card, trump byte, lead byte) bool {
 	if card.Suit == other.Suit {
 		return ranks[card.Rank] > ranks[other.Rank]
 	}
@@ -158,7 +147,7 @@ func (deck *Deck) NextCard() Card {
 }
 
 func GetHand(c appengine.Context, u *userLocal) (*Hand, error) {
-	key := datastore.NewKey(c, "UserHand", u.GooglePlusID, 0, nil)
+	key := datastore.NewKey(c, "Hand", u.GooglePlusID, 0, nil)
 	hand := &Hand{}
 	err := datastore.Get(c, key, hand)
 
@@ -179,19 +168,21 @@ func NewHand(hand *Hand, u *userLocal) error {
 	deck := &Deck{}
 	deck.Shuffle()
 
-	hand.Cards = make([]Card, 5)
-	hand.Cards[0] = deck.NextCard()
-	hand.Cards[1] = deck.NextCard()
-	hand.Cards[2] = deck.NextCard()
-	hand.Cards[3] = deck.NextCard()
-	hand.Cards[4] = deck.NextCard()
+	hand.Ranks = make([]byte, 5)
+	hand.Suits = make([]byte, 5)
+	for i := 0; i < 5; i++ {
+		card := deck.NextCard()
+		hand.Ranks[i] = card.Rank
+		hand.Suits[i] = card.Suit
+	}
 	return nil
 }
 
 func GetOrCreateHand(c appengine.Context, u *userLocal, hand *Hand) error {
 	existingHand, err := GetHand(c, u)
 	if err == nil {
-		hand.Cards = existingHand.Cards
+		hand.Ranks = existingHand.Ranks
+		hand.Suits = existingHand.Suits
 		hand.Created = existingHand.Created
 		hand.Email = existingHand.Email
 		return nil
@@ -204,7 +195,7 @@ func GetOrCreateHand(c appengine.Context, u *userLocal, hand *Hand) error {
 		return err
 	}
 
-	key := datastore.NewKey(c, "UserHand", u.GooglePlusID, 0, nil)
+	key := datastore.NewKey(c, "Hand", u.GooglePlusID, 0, nil)
 	_, err = datastore.Put(c, key, hand)
 	return err
 }
