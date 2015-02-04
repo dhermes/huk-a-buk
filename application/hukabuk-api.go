@@ -32,7 +32,7 @@ func (hapi *HukABukApi) GetCards(r *http.Request,
 
 type GetGameRequest struct {
 	// H/T to: http://stackoverflow.com/a/21152548/1068170
-	GameId *int64 `json:"id,string,omitempty" endpoints:"required"`
+	GameId *int64 `json:"id,string,omitempty" endpoints:"req"`
 }
 
 func (hapi *HukABukApi) GetGame(r *http.Request,

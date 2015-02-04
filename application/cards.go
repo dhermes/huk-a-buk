@@ -82,13 +82,14 @@ var (
 )
 
 type Card struct {
-	Suit byte `json:"suit" endpoints:"required"`
-	Rank byte `json:"rank" endpoints:"required"`
+	Suit byte `json:"suit" endpoints:"req"`
+	Rank byte `json:"rank" endpoints:"req"`
 }
 
 type Deck struct {
-	CardBytes []byte `json:"cardBytes" datastore:"cardBytes"`
-	currIndex int8
+	// Need to make these public so they get stored in the datastore.
+	CardBytes []byte `json:"-"`
+	CurrIndex int8   `json:"-"`
 }
 
 type Hand struct {
@@ -129,7 +130,7 @@ func (card *Card) IsBetter(other *Card, trump byte, lead byte) bool {
 }
 
 func (deck *Deck) Shuffle() {
-	deck.currIndex = 0
+	deck.CurrIndex = 0
 	numCards := 52
 	// H/T to: http://stackoverflow.com/a/12321192/1068170
 	source := rand.NewSource(time.Now().UTC().UnixNano())
@@ -145,11 +146,11 @@ func (deck *Deck) Shuffle() {
 func (deck *Deck) NextCard() Card {
 	var cardIndex int8
 	if deck.CardBytes == nil {
-		cardIndex = deck.currIndex
+		cardIndex = deck.CurrIndex
 	} else {
-		cardIndex = int8(deck.CardBytes[deck.currIndex])
+		cardIndex = int8(deck.CardBytes[deck.CurrIndex])
 	}
-	deck.currIndex++
+	deck.CurrIndex++
 	return unshuffledDeck[cardIndex]
 }
 
