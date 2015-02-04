@@ -8,7 +8,8 @@ import (
 )
 
 type Game struct {
-	Id      int64    `json:"id" endpoints:"req" datastore:"-"`
+	// Id is just the Key Id, but we keep it around for responses.
+	Id      int64    `json:"id" datastore:"-"`
 	Deck    Deck     `json:"-"`
 	Players []string `json:"players"`
 }

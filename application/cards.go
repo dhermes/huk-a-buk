@@ -82,8 +82,8 @@ var (
 )
 
 type Card struct {
-	Suit byte `json:"suit" endpoints:"req"`
-	Rank byte `json:"rank" endpoints:"req"`
+	Suit byte `json:"suit"`
+	Rank byte `json:"rank"`
 }
 
 type Deck struct {
