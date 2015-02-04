@@ -39,6 +39,60 @@ var (
 		'6', '7', '8', '9',
 		'T', 'J', 'Q', 'K', 'A',
 	}
+	unshuffledDeck = map[int8]Card{
+		0:  Card{Suit: 'H', Rank: '2'},
+		1:  Card{Suit: 'H', Rank: '3'},
+		2:  Card{Suit: 'H', Rank: '4'},
+		3:  Card{Suit: 'H', Rank: '5'},
+		4:  Card{Suit: 'H', Rank: '6'},
+		5:  Card{Suit: 'H', Rank: '7'},
+		6:  Card{Suit: 'H', Rank: '8'},
+		7:  Card{Suit: 'H', Rank: '9'},
+		8:  Card{Suit: 'H', Rank: 'T'},
+		9:  Card{Suit: 'H', Rank: 'J'},
+		10: Card{Suit: 'H', Rank: 'Q'},
+		11: Card{Suit: 'H', Rank: 'K'},
+		12: Card{Suit: 'H', Rank: 'A'},
+		13: Card{Suit: 'S', Rank: '2'},
+		14: Card{Suit: 'S', Rank: '3'},
+		15: Card{Suit: 'S', Rank: '4'},
+		16: Card{Suit: 'S', Rank: '5'},
+		17: Card{Suit: 'S', Rank: '6'},
+		18: Card{Suit: 'S', Rank: '7'},
+		19: Card{Suit: 'S', Rank: '8'},
+		20: Card{Suit: 'S', Rank: '9'},
+		21: Card{Suit: 'S', Rank: 'T'},
+		22: Card{Suit: 'S', Rank: 'J'},
+		23: Card{Suit: 'S', Rank: 'Q'},
+		24: Card{Suit: 'S', Rank: 'K'},
+		25: Card{Suit: 'S', Rank: 'A'},
+		26: Card{Suit: 'C', Rank: '2'},
+		27: Card{Suit: 'C', Rank: '3'},
+		28: Card{Suit: 'C', Rank: '4'},
+		29: Card{Suit: 'C', Rank: '5'},
+		30: Card{Suit: 'C', Rank: '6'},
+		31: Card{Suit: 'C', Rank: '7'},
+		32: Card{Suit: 'C', Rank: '8'},
+		33: Card{Suit: 'C', Rank: '9'},
+		34: Card{Suit: 'C', Rank: 'T'},
+		35: Card{Suit: 'C', Rank: 'J'},
+		36: Card{Suit: 'C', Rank: 'Q'},
+		37: Card{Suit: 'C', Rank: 'K'},
+		38: Card{Suit: 'C', Rank: 'A'},
+		39: Card{Suit: 'D', Rank: '2'},
+		40: Card{Suit: 'D', Rank: '3'},
+		41: Card{Suit: 'D', Rank: '4'},
+		42: Card{Suit: 'D', Rank: '5'},
+		43: Card{Suit: 'D', Rank: '6'},
+		44: Card{Suit: 'D', Rank: '7'},
+		45: Card{Suit: 'D', Rank: '8'},
+		46: Card{Suit: 'D', Rank: '9'},
+		47: Card{Suit: 'D', Rank: 'T'},
+		48: Card{Suit: 'D', Rank: 'J'},
+		49: Card{Suit: 'D', Rank: 'Q'},
+		50: Card{Suit: 'D', Rank: 'K'},
+		51: Card{Suit: 'D', Rank: 'A'},
+	}
 )
 
 type Card struct {
@@ -48,7 +102,8 @@ type Card struct {
 }
 
 type Deck struct {
-	Cards [52]Card
+	cards     *[]int // TODO(djh): Would prefer to use int8.
+	currIndex int8
 }
 
 type Hand struct {
@@ -106,29 +161,21 @@ func (card *Card) IsBetter(other *Card, trump int8, lead int8) bool {
 	return false
 }
 
-// Make a new unshuffled Deck.
-func NewDeck() (*Deck, error) {
-	deck := &Deck{}
-	index := 0
-	for _, suit := range suitsList {
-		for _, rank := range rankList {
-			card, err := NewCard(suit, rank)
-			if err != nil {
-				return nil, err
-			}
-			deck.Cards[index] = *card
-			index++
-		}
-	}
-	return deck, nil
+func (deck *Deck) Shuffle() {
+	deck.currIndex = 0
+	perm := rand.Perm(52)
+	deck.cards = &perm
 }
 
-func (deck *Deck) Shuffle() {
-	newCards := [52]Card{}
-	for i, permIndex := range rand.Perm(52) {
-		newCards[i] = deck.Cards[permIndex]
+func (deck *Deck) NextCard() Card {
+	var cardIndex int8
+	if deck.cards == nil {
+		cardIndex = deck.currIndex
+	} else {
+		cardIndex = int8((*deck.cards)[deck.currIndex])
 	}
-	deck.Cards = newCards
+	deck.currIndex++
+	return unshuffledDeck[cardIndex]
 }
 
 func GetHand(c appengine.Context, u *userLocal) (*Hand, error) {
@@ -150,12 +197,15 @@ func NewHand(hand *Hand, u *userLocal) error {
 	hand.Created = time.Now().UTC()
 	hand.Email = u.Email
 
-	deck, err := NewDeck()
-	if err != nil {
-		return err
-	}
+	deck := &Deck{}
 	deck.Shuffle()
-	hand.Cards = deck.Cards[:5]
+
+	hand.Cards = make([]Card, 5)
+	hand.Cards[0] = deck.NextCard()
+	hand.Cards[1] = deck.NextCard()
+	hand.Cards[2] = deck.NextCard()
+	hand.Cards[3] = deck.NextCard()
+	hand.Cards[4] = deck.NextCard()
 	return nil
 }
 
