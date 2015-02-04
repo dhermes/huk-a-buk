@@ -3,6 +3,8 @@ package hukabuk
 import (
 	"appengine"
 	"appengine/datastore"
+
+	"github.com/GoogleCloudPlatform/go-endpoints/endpoints"
 )
 
 type Game struct {
@@ -20,6 +22,6 @@ func GetGame(c appengine.Context, gameId string, game *Game) error {
 		// TODO(djh): Distinguish between a "good" error (key does not exist)
 		//            and a "bad" one (request failure).
 		c.Debugf("GetGame err: %v", err)
-		return err
+		return endpoints.NewNotFoundError("Game not found.")
 	}
 }

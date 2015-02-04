@@ -1,7 +1,6 @@
 package hukabuk
 
 import (
-	"errors"
 	"net/http"
 
 	"github.com/GoogleCloudPlatform/go-endpoints/endpoints"
@@ -37,14 +36,13 @@ type GetGameRequest struct {
 
 func (hapi *HukABukApi) GetGame(r *http.Request,
 	req *GetGameRequest, resp *Game) error {
-	if req.GameId == nil {
-		return endpoints.NewBadRequestError("Game id is required.")
-	}
-
 	c := NewContext(r)
 	u, err := getCurrentUser(c)
 	if err != nil {
 		return err
+	}
+	if req.GameId == nil {
+		return endpoints.NewBadRequestError("Game id is required.")
 	}
 	c.Infof("User %v unused until GetGame gets authenticated.", u)
 	return GetGame(c, *req.GameId, resp)
@@ -55,11 +53,8 @@ func (hapi *HukABukApi) GetGame(r *http.Request,
 // an "unauthorized" error.
 func getCurrentUser(c Context) (*userLocal, error) {
 	u, err := CurrentUser(c, scopes, audiences, clientIds)
-	if err != nil {
-		return nil, err
-	}
-	if u == nil {
-		return nil, errors.New("Unauthorized: Please, sign in.")
+	if err != nil || u == nil {
+		return nil, endpoints.NewUnauthorizedError("Request not authorized.")
 	}
 	c.Debugf("Current user: %#v", u)
 	return u, nil
