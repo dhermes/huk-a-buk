@@ -59,6 +59,16 @@ func (hapi *HukABukApi) NewGame(r *http.Request,
 	return StartGame(c, u, resp)
 }
 
+func (hapi *HukABukApi) GetGames(r *http.Request,
+	req *EmptyRequest, resp *GetGamesResponse) error {
+	c := NewContext(r)
+	u, err := getCurrentUser(c)
+	if err != nil {
+		return err
+	}
+	return GetGames(c, u, resp)
+}
+
 // getCurrentUser retrieves a user associated with the request.
 // If there's no user (e.g. no auth info present in the request) returns
 // an "unauthorized" error.
@@ -97,6 +107,10 @@ func RegisterService() (*endpoints.RPCService, error) {
 
 	info = rpcService.MethodByName("NewGame").Info()
 	info.Path, info.HTTPMethod, info.Name = "game/new", "POST", "game.newgame"
+	info.Scopes, info.ClientIds, info.Audiences = scopes, clientIds, audiences
+
+	info = rpcService.MethodByName("GetGames").Info()
+	info.Path, info.HTTPMethod, info.Name = "games", "GET", "game.list"
 	info.Scopes, info.ClientIds, info.Audiences = scopes, clientIds, audiences
 
 	return rpcService, nil

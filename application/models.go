@@ -28,6 +28,23 @@ func GetGame(c appengine.Context, gameId int64, game *Game) error {
 	}
 }
 
+type GetGamesResponse struct {
+	// H/T to: http://stackoverflow.com/a/21152548/1068170
+	Games []Game `json:"games"`
+}
+
+func GetGames(c appengine.Context, u *userLocal, resp *GetGamesResponse) error {
+	gameId := int64(5865619656278016)
+	game := &Game{}
+	err := GetGame(c, gameId, game)
+	if err == nil {
+		resp.Games = []Game{*game}
+		return nil
+	} else {
+		return err
+	}
+}
+
 func StartGame(c appengine.Context, u *userLocal, game *Game) error {
 	key := datastore.NewIncompleteKey(c, "Game", nil)
 	game.Players = append(game.Players, u.GooglePlusID)
