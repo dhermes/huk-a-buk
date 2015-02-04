@@ -35,6 +35,7 @@ type GetGamesResponse struct {
 
 func GetGames(c appengine.Context, u *userLocal, resp *GetGamesResponse) error {
 	q := datastore.NewQuery("Game").Filter("Players =", u.GooglePlusID)
+	// TODO(djh): Add limit here.
 	keys, err := q.GetAll(c, &resp.Games)
 	if err == nil {
 		for i, key := range keys {
@@ -46,9 +47,13 @@ func GetGames(c appengine.Context, u *userLocal, resp *GetGamesResponse) error {
 	}
 }
 
-func StartGame(c appengine.Context, u *userLocal, game *Game) error {
+func StartGame(c appengine.Context, u *userLocal, players []string, game *Game) error {
 	key := datastore.NewIncompleteKey(c, "Game", nil)
 	game.Players = append(game.Players, u.GooglePlusID)
+	// TODO(djh): Make this unique (or don't? queries won't fail).
+	for _, player := range players {
+		game.Players = append(game.Players, player)
+	}
 	game.Deck = Deck{}
 	game.Deck.Shuffle()
 

@@ -49,14 +49,18 @@ func (hapi *HukABukApi) GetGame(r *http.Request,
 	return GetGame(c, *req.GameId, resp)
 }
 
+type NewGameRequest struct {
+	Players []string `json:"players"`
+}
+
 func (hapi *HukABukApi) NewGame(r *http.Request,
-	req *EmptyRequest, resp *Game) error {
+	req *NewGameRequest, resp *Game) error {
 	c := NewContext(r)
 	u, err := getCurrentUser(c)
 	if err != nil {
 		return err
 	}
-	return StartGame(c, u, resp)
+	return StartGame(c, u, req.Players, resp)
 }
 
 func (hapi *HukABukApi) GetGames(r *http.Request,
