@@ -82,7 +82,6 @@ var (
 )
 
 type Card struct {
-	// Use int8 instead of byte since App Engine needs it to be signed.
 	Suit byte `json:"suit" endpoints:"required"`
 	Rank byte `json:"rank" endpoints:"required"`
 }

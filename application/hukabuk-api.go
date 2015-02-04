@@ -23,15 +23,31 @@ type HukABukApi struct {
 
 func (hapi *HukABukApi) GetCards(r *http.Request,
 	req *EmptyRequest, resp *Hand) error {
-
 	c := NewContext(r)
-	u, err := getCurrentUser(c) // Not Used
+	u, err := getCurrentUser(c)
 	if err != nil {
 		return err
 	}
-	c.Infof("%v", u)
-
 	return GetOrCreateHand(c, u, resp)
+}
+
+type GetGameRequest struct {
+	GameId *string `json:"id" endpoints:"required"`
+}
+
+func (hapi *HukABukApi) GetGame(r *http.Request,
+	req *GetGameRequest, resp *Game) error {
+	if req.GameId == nil {
+		return endpoints.NewBadRequestError("Game id is required.")
+	}
+
+	c := NewContext(r)
+	u, err := getCurrentUser(c)
+	if err != nil {
+		return err
+	}
+	c.Infof("User %v unused until GetGame gets authenticated.", u)
+	return GetGame(c, *req.GameId, resp)
 }
 
 // getCurrentUser retrieves a user associated with the request.
@@ -67,6 +83,10 @@ func RegisterService() (*endpoints.RPCService, error) {
 
 	info := rpcService.MethodByName("GetCards").Info()
 	info.Path, info.HTTPMethod, info.Name = "cards", "GET", "cards.list"
+	info.Scopes, info.ClientIds, info.Audiences = scopes, clientIds, audiences
+
+	info = rpcService.MethodByName("GetGame").Info()
+	info.Path, info.HTTPMethod, info.Name = "game", "GET", "game.get"
 	info.Scopes, info.ClientIds, info.Audiences = scopes, clientIds, audiences
 
 	return rpcService, nil
