@@ -4,7 +4,11 @@ hukABukApp.addGame = function(gameId, numPlayers, tableElt) {
   var row = document.createElement('tr');
 
   var idElt = document.createElement('td');
-  idElt.innerHTML = gameId;
+  var anchor = document.createElement('a');
+  anchor.classList.add('fullTd');
+  anchor.text = gameId;
+  anchor.href = '/game#' + gameId;
+  idElt.appendChild(anchor);
 
   var numPlayersElt = document.createElement('td');
   if (numPlayers === 1) {

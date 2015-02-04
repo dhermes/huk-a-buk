@@ -20,14 +20,28 @@ type EmptyRequest struct {
 type HukABukApi struct {
 }
 
+type GetCardsRequest struct {
+	GameId int64 `json:"game,string"`
+}
+
 func (hapi *HukABukApi) GetCards(r *http.Request,
-	req *EmptyRequest, resp *Hand) error {
+	req *GetCardsRequest, resp *Hand) error {
 	c := NewContext(r)
+	c.Infof("req: %v", req)
 	u, err := getCurrentUser(c)
 	if err != nil {
 		return err
 	}
-	return GetOrCreateHand(c, u, resp)
+
+	var hand *Hand
+	hand, err = GetHand(c, u, req.GameId)
+	if err == nil {
+		resp.Ranks = hand.Ranks
+		resp.Suits = hand.Suits
+		resp.Created = hand.Created
+		resp.Email = hand.Email
+	}
+	return err
 }
 
 type GetGameRequest struct {

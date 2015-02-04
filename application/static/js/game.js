@@ -34,7 +34,8 @@ hukABukApp.queryCards = function() {
     return;
   }
 
-  gapi.client.hukabuk.cards.list({}).execute(function(resp) {
+  var gameId = window.location.hash.substr(1);
+  gapi.client.hukabuk.cards.list({'game': gameId}).execute(function(resp) {
     var suits = atob(resp.suits);
     var ranks = atob(resp.ranks);
     for (var i = 0; i < 5; i++) {

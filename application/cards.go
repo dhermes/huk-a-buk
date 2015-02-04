@@ -154,8 +154,9 @@ func (deck *Deck) NextCard() Card {
 	return unshuffledDeck[cardIndex]
 }
 
-func GetHand(c appengine.Context, u *userLocal) (*Hand, error) {
-	key := datastore.NewKey(c, "Hand", u.GooglePlusID, 0, nil)
+func GetHand(c appengine.Context, u *userLocal, gameId int64) (*Hand, error) {
+	parentKey := datastore.NewKey(c, "Game", "", gameId, nil)
+	key := datastore.NewKey(c, "Hand", u.GooglePlusID, 0, parentKey)
 	hand := &Hand{}
 	err := datastore.Get(c, key, hand)
 
@@ -186,8 +187,8 @@ func NewHand(hand *Hand, u *userLocal) error {
 	return nil
 }
 
-func GetOrCreateHand(c appengine.Context, u *userLocal, hand *Hand) error {
-	existingHand, err := GetHand(c, u)
+func GetOrCreateHand(c appengine.Context, u *userLocal, gameId int64, hand *Hand) error {
+	existingHand, err := GetHand(c, u, gameId)
 	if err == nil {
 		hand.Ranks = existingHand.Ranks
 		hand.Suits = existingHand.Suits
@@ -203,7 +204,8 @@ func GetOrCreateHand(c appengine.Context, u *userLocal, hand *Hand) error {
 		return err
 	}
 
-	key := datastore.NewKey(c, "Hand", u.GooglePlusID, 0, nil)
+	parentKey := datastore.NewKey(c, "Game", "", gameId, nil)
+	key := datastore.NewKey(c, "Hand", u.GooglePlusID, 0, parentKey)
 	_, err = datastore.Put(c, key, hand)
 	return err
 }
